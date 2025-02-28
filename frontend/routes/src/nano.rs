@@ -27,6 +27,38 @@ pub struct AccountInfoResponse {
     confirmation_height_frontier: String,
 }
 
+#[derive(Deserialize, Serialize, Debug)]
+pub struct HistoryStruct {
+    #[serde(rename = "type")]
+    history_type: String,
+    account: String,
+    amount: String,
+    local_timestamp: String,
+    height: String,
+    hash: String,
+    confirmed: String,
+    #[serde(default)]
+    username: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct AccountHistoryResponse {
+    account: String,
+    history: Vec<HistoryStruct>,
+    #[serde(default)]
+    previous: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct AccountBalanceResponse {
+    balance: String,
+    pending: String,
+    receivable: String,
+    balance_nano: String,
+    pending_nano: String,
+    receivable_nano: String,
+}
+
 pub async fn get_version() -> VersionResponse {
     let client = reqwest::Client::new();
     let data: HashMap<_, _> = [("action", "version")].into();
@@ -43,10 +75,7 @@ pub async fn get_account_info(account: &str) -> AccountInfoResponse {
     response.json::<AccountInfoResponse>().await.unwrap()
 }
 
-pub async fn get_account_history(
-    account: &str,
-    count: &i32,
-) -> Result<reqwest::Response, reqwest::Error> {
+pub async fn get_account_history(account: &str, count: i32) -> AccountHistoryResponse {
     let count = format!("{}", count);
     let client = reqwest::Client::new();
     let data: HashMap<_, _> = [
@@ -57,5 +86,13 @@ pub async fn get_account_history(
     .into();
     let response = client.post(URL).json(&data).send().await.unwrap();
 
-    Ok(response)
+    response.json::<AccountHistoryResponse>().await.unwrap()
+}
+
+pub async fn get_account_balance(account: &str) -> AccountBalanceResponse {
+    let client = reqwest::Client::new();
+    let data: HashMap<_, _> = [("action", "account_info"), ("account", account)].into();
+    let response = client.post(URL).json(&data).send().await.unwrap();
+
+    response.json::<AccountBalanceResponse>().await.unwrap()
 }
