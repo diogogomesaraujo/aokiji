@@ -1,0 +1,22 @@
+[workspace]
+resolver = "2"
+members = ["ui", "web", "routes"]
+
+[workspace.dependencies]
+dioxus = { version = "0.6.0" }
+
+# workspace
+ui = { path = "ui" }
+routes = { path = "routes" }
+
+[profile]
+
+[profile.wasm-dev]
+inherits = "dev"
+opt-level = 1
+
+[profile.server-dev]
+inherits = "dev"
+
+[profile.android-dev]
+inherits = "dev"
