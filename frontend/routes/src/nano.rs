@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+/// Define the current Nano RPC API link as constant (The link can be changed since it follows Nano RPC guidelines).
 const URL: &str = "https://rpc.nano.to";
 
+/// Define the struct for the get_version API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct VersionResponse {
     rpc_version: String,
@@ -13,6 +15,7 @@ pub struct VersionResponse {
     network: String,
 }
 
+/// Define the struct for the get_account_info API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct AccountInfoResponse {
     frontier: String,
@@ -27,8 +30,9 @@ pub struct AccountInfoResponse {
     confirmation_height_frontier: String,
 }
 
+/// Define the struct for each node of the history in the get_account_history API call response.
 #[derive(Deserialize, Serialize, Debug)]
-pub struct HistoryStruct {
+pub struct HistoryNode {
     #[serde(rename = "type")]
     history_type: String,
     account: String,
@@ -41,10 +45,11 @@ pub struct HistoryStruct {
     username: Option<String>,
 }
 
+/// Define the struct for the get_account_history API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct AccountHistoryResponse {
     account: String,
-    history: Vec<HistoryStruct>,
+    history: Vec<HistoryNode>,
     #[serde(default)]
     previous: Option<String>,
 }
@@ -58,6 +63,8 @@ pub struct AccountBalanceResponse {
     pending_nano: String,
     receivable_nano: String,
 }
+
+// CALLS TO NANO RPC API
 
 pub async fn get_version() -> VersionResponse {
     let client = reqwest::Client::new();
