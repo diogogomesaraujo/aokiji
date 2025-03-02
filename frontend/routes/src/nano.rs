@@ -1,3 +1,5 @@
+//! This file contains all the structures and api calls to the Nano RPC API
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -54,6 +56,7 @@ pub struct AccountHistoryResponse {
     previous: Option<String>,
 }
 
+/// Define the struct for the get_account_balance API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct AccountBalanceResponse {
     balance: String,
@@ -64,8 +67,45 @@ pub struct AccountBalanceResponse {
     receivable_nano: String,
 }
 
-// CALLS TO NANO RPC API
+/// Define the struct for the content of the block in the get_block_info API call response.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct BlockInfoContent {
+    #[serde(rename = "type")]
+    content_type: String,
+    account: String,
+    previous: String,
+    representative: String,
+    balance: String,
+    balance_nano: String,
+    link: String,
+    link_as_account: String,
+    signature: String,
+    work: String,
+}
 
+/// Define the struct for the get_block_info API call response.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct BlockInfoResponse {
+    block_account: String,
+    amount: String,
+    amount_nano: String,
+    balance: String,
+    balance_nano: String,
+    height: String,
+    local_timestamp: String,
+    successor: String,
+    confirmed: String,
+    content: BlockInfoContent,
+    subtype: String,
+}
+
+/// Define the struct for the wallet_create API call response.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct WalletCreateResponse {
+    wallet: String,
+}
+
+/// Function that gets the version information from the Nano API.
 pub async fn get_version() -> VersionResponse {
     let client = reqwest::Client::new();
     let data: HashMap<_, _> = [("action", "version")].into();
@@ -74,6 +114,7 @@ pub async fn get_version() -> VersionResponse {
     response.json::<VersionResponse>().await.unwrap()
 }
 
+/// Function that gets an account's information from the Nano API.
 pub async fn get_account_info(account: &str) -> AccountInfoResponse {
     let client = reqwest::Client::new();
     let data: HashMap<_, _> = [("action", "account_info"), ("account", account)].into();
@@ -82,6 +123,7 @@ pub async fn get_account_info(account: &str) -> AccountInfoResponse {
     response.json::<AccountInfoResponse>().await.unwrap()
 }
 
+/// Function that gets an account's history (according to a block count) from the Nano API.
 pub async fn get_account_history(account: &str, count: i32) -> AccountHistoryResponse {
     let count = format!("{}", count);
     let client = reqwest::Client::new();
@@ -96,10 +138,29 @@ pub async fn get_account_history(account: &str, count: i32) -> AccountHistoryRes
     response.json::<AccountHistoryResponse>().await.unwrap()
 }
 
+/// Function that gets an account's balance from the Nano API.
 pub async fn get_account_balance(account: &str) -> AccountBalanceResponse {
     let client = reqwest::Client::new();
     let data: HashMap<_, _> = [("action", "account_info"), ("account", account)].into();
     let response = client.post(URL).json(&data).send().await.unwrap();
 
     response.json::<AccountBalanceResponse>().await.unwrap()
+}
+
+/// Function that gets a block's info from the Nano API.
+pub async fn get_block_info(hash: &str) -> BlockInfoResponse {
+    let client = reqwest::Client::new();
+    let data: HashMap<_, _> = [("action", "block_info"), ("hash", hash)].into();
+    let response = client.post(URL).json(&data).send().await.unwrap();
+
+    response.json::<BlockInfoResponse>().await.unwrap()
+}
+
+/// Function that creates a wallet in for Nano blockchain.
+pub async fn wallet_create() -> WalletCreateResponse {
+    let client = reqwest::Client::new();
+    let data: HashMap<_, _> = [("action", "wallet_create")].into();
+    let response = client.post(URL).json(&data).send().await.unwrap();
+
+    response.json::<WalletCreateResponse>().await.unwrap()
 }
