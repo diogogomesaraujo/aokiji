@@ -105,6 +105,24 @@ pub struct WalletCreateResponse {
     wallet: String,
 }
 
+/// Define the struct for the wallet_destroy API call response.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct WalletDestroyResponse {
+    destroy: String,
+}
+
+/// Define the struct for the account_create API call response.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct AccountCreateResponse {
+    account: String,
+}
+
+/// Define the struct for the account_destroy API call response.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct AccountDestroyResponse {
+    remove: String,
+}
+
 /// Function that gets the version information from the Nano API.
 pub async fn get_version() -> VersionResponse {
     let client = reqwest::Client::new();
@@ -163,4 +181,36 @@ pub async fn wallet_create() -> WalletCreateResponse {
     let response = client.post(URL).json(&data).send().await.unwrap();
 
     response.json::<WalletCreateResponse>().await.unwrap()
+}
+
+/// Function that destroys a wallet in for Nano blockchain.
+pub async fn wallet_destroy() -> WalletDestroyResponse {
+    let client = reqwest::Client::new();
+    let data: HashMap<_, _> = [("action", "wallet_destroy")].into();
+    let response = client.post(URL).json(&data).send().await.unwrap();
+
+    response.json::<WalletDestroyResponse>().await.unwrap()
+}
+
+/// Function that creates an account in a given wallet.
+pub async fn account_create(wallet: &str) -> AccountCreateResponse {
+    let client = reqwest::Client::new();
+    let data: HashMap<_, _> = [("action", "account_create"), ("wallet", wallet)].into();
+    let response = client.post(URL).json(&data).send().await.unwrap();
+
+    response.json::<AccountCreateResponse>().await.unwrap()
+}
+
+/// Function that removes an account in a given wallet.
+pub async fn account_remove(wallet: &str, account: &str) -> AccountDestroyResponse {
+    let client = reqwest::Client::new();
+    let data: HashMap<_, _> = [
+        ("action", "account_create"),
+        ("wallet", wallet),
+        ("account", account),
+    ]
+    .into();
+    let response = client.post(URL).json(&data).send().await.unwrap();
+
+    response.json::<AccountDestroyResponse>().await.unwrap()
 }
