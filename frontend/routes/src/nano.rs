@@ -34,7 +34,7 @@ pub struct AccountInfoResponse {
 
 /// Define the struct for each node of the history in the get_account_history API call response.
 #[derive(Deserialize, Serialize, Debug)]
-pub struct HistoryNode {
+pub struct AccountHistoryNode {
     #[serde(rename = "type")]
     history_type: String,
     account: String,
@@ -51,7 +51,7 @@ pub struct HistoryNode {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct AccountHistoryResponse {
     account: String,
-    history: Vec<HistoryNode>,
+    history: Vec<AccountHistoryNode>,
     #[serde(default)]
     previous: Option<String>,
 }
@@ -65,6 +65,61 @@ pub struct AccountBalanceResponse {
     balance_nano: String,
     pending_nano: String,
     receivable_nano: String,
+}
+
+/// Define the struct for the account_create API call response.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct AccountCreateResponse {
+    account: String,
+}
+
+/// Define the struct for the account_destroy API call response.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct AccountDestroyResponse {
+    remove: String,
+}
+
+/// Define the struct for the get_wallet_info API call response.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct WalletInfoResponse {
+    balance: String,
+    pending: String,
+    recievable: String,
+    accounts_count: String,
+    adhoc_count: String,
+    deterministic_count: String,
+    deterministic_index: String,
+    accounts_block_count: String,
+    accounts_cemented_block_count: String,
+}
+
+/// Define the struct for each node of the history in the get_account_history API call response.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct WalletHistoryNode {
+    #[serde(rename = "type")]
+    history_type: String,
+    account: String,
+    amount: String,
+    local_timestamp: String,
+    hash: String,
+}
+
+/// Define the struct for the get_account_history API call response.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct WalletHistoryResponse {
+    history: Vec<AccountHistoryNode>,
+}
+
+/// Define the struct for the wallet_create API call response.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct WalletCreateResponse {
+    wallet: String,
+}
+
+/// Define the struct for the wallet_destroy API call response.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct WalletDestroyResponse {
+    destroy: String,
 }
 
 /// Define the struct for the content of the block in the get_block_info API call response.
@@ -97,30 +152,6 @@ pub struct BlockInfoResponse {
     confirmed: String,
     content: BlockInfoContent,
     subtype: String,
-}
-
-/// Define the struct for the wallet_create API call response.
-#[derive(Deserialize, Serialize, Debug)]
-pub struct WalletCreateResponse {
-    wallet: String,
-}
-
-/// Define the struct for the wallet_destroy API call response.
-#[derive(Deserialize, Serialize, Debug)]
-pub struct WalletDestroyResponse {
-    destroy: String,
-}
-
-/// Define the struct for the account_create API call response.
-#[derive(Deserialize, Serialize, Debug)]
-pub struct AccountCreateResponse {
-    account: String,
-}
-
-/// Define the struct for the account_destroy API call response.
-#[derive(Deserialize, Serialize, Debug)]
-pub struct AccountDestroyResponse {
-    remove: String,
 }
 
 /// Function that gets the version information from the Nano API.
@@ -174,24 +205,6 @@ pub async fn get_block_info(hash: &str) -> BlockInfoResponse {
     response.json::<BlockInfoResponse>().await.unwrap()
 }
 
-/// Function that creates a wallet in for Nano blockchain.
-pub async fn wallet_create() -> WalletCreateResponse {
-    let client = reqwest::Client::new();
-    let data: HashMap<_, _> = [("action", "wallet_create")].into();
-    let response = client.post(URL).json(&data).send().await.unwrap();
-
-    response.json::<WalletCreateResponse>().await.unwrap()
-}
-
-/// Function that destroys a wallet in for Nano blockchain.
-pub async fn wallet_destroy() -> WalletDestroyResponse {
-    let client = reqwest::Client::new();
-    let data: HashMap<_, _> = [("action", "wallet_destroy")].into();
-    let response = client.post(URL).json(&data).send().await.unwrap();
-
-    response.json::<WalletDestroyResponse>().await.unwrap()
-}
-
 /// Function that creates an account in a given wallet.
 pub async fn account_create(wallet: &str) -> AccountCreateResponse {
     let client = reqwest::Client::new();
@@ -213,4 +226,40 @@ pub async fn account_remove(wallet: &str, account: &str) -> AccountDestroyRespon
     let response = client.post(URL).json(&data).send().await.unwrap();
 
     response.json::<AccountDestroyResponse>().await.unwrap()
+}
+
+/// Function that gets a wallet's information from the Nano API.
+pub async fn get_wallet_info(wallet: &str) -> WalletInfoResponse {
+    let client = reqwest::Client::new();
+    let data: HashMap<_, _> = [("action", "wallet_info"), ("wallet", wallet)].into();
+    let response = client.post(URL).json(&data).send().await.unwrap();
+
+    response.json::<WalletInfoResponse>().await.unwrap()
+}
+
+/// Function that gets a wallets's history (with all it's accounts) from the Nano API.
+pub async fn get_wallet_history(wallet: &str) -> WalletHistoryResponse {
+    let client = reqwest::Client::new();
+    let data: HashMap<_, _> = [("action", "wallet_history"), ("wallet", wallet)].into();
+    let response = client.post(URL).json(&data).send().await.unwrap();
+
+    response.json::<WalletHistoryResponse>().await.unwrap()
+}
+
+/// Function that creates a wallet in for Nano blockchain.
+pub async fn wallet_create() -> WalletCreateResponse {
+    let client = reqwest::Client::new();
+    let data: HashMap<_, _> = [("action", "wallet_create")].into();
+    let response = client.post(URL).json(&data).send().await.unwrap();
+
+    response.json::<WalletCreateResponse>().await.unwrap()
+}
+
+/// Function that destroys a wallet in for Nano blockchain.
+pub async fn wallet_destroy() -> WalletDestroyResponse {
+    let client = reqwest::Client::new();
+    let data: HashMap<_, _> = [("action", "wallet_destroy")].into();
+    let response = client.post(URL).json(&data).send().await.unwrap();
+
+    response.json::<WalletDestroyResponse>().await.unwrap()
 }
