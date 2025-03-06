@@ -9,40 +9,40 @@ const URL: &str = "https://rpc.nano.to";
 /// Define the struct for the get_version API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct VersionResponse {
-    rpc_version: String,
-    store_version: String,
-    protocol_version: String,
-    node_vendor: String,
-    store_vendor: String,
-    network: String,
+    rpc_version: Option<String>,
+    store_version: Option<String>,
+    protocol_version: Option<String>,
+    node_vendor: Option<String>,
+    store_vendor: Option<String>,
+    network: Option<String>,
 }
 
 /// Define the struct for the get_account_info API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct AccountInfoResponse {
-    frontier: String,
-    open_block: String,
-    representative_block: String,
-    balance: String,
-    balance_nano: String,
-    modified_timestamp: String,
-    block_count: String,
-    account_version: String,
-    confirmation_height: String,
-    confirmation_height_frontier: String,
+    frontier: Option<String>,
+    open_block: Option<String>,
+    representative_block: Option<String>,
+    balance: Option<String>,
+    balance_nano: Option<String>,
+    modified_timestamp: Option<String>,
+    block_count: Option<String>,
+    account_version: Option<String>,
+    confirmation_height: Option<String>,
+    confirmation_height_frontier: Option<String>,
 }
 
 /// Define the struct for each node of the history in the get_account_history API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct AccountHistoryNode {
     #[serde(rename = "type")]
-    history_type: String,
-    account: String,
-    amount: String,
-    local_timestamp: String,
-    height: String,
-    hash: String,
-    confirmed: String,
+    history_type: Option<String>,
+    account: Option<String>,
+    amount: Option<String>,
+    local_timestamp: Option<String>,
+    height: Option<String>,
+    hash: Option<String>,
+    confirmed: Option<String>,
     #[serde(default)]
     username: Option<String>,
 }
@@ -50,108 +50,123 @@ pub struct AccountHistoryNode {
 /// Define the struct for the get_account_history API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct AccountHistoryResponse {
-    account: String,
-    history: Vec<AccountHistoryNode>,
+    account: Option<String>,
+    history: Option<Vec<AccountHistoryNode>>,
     #[serde(default)]
     previous: Option<String>,
 }
 
 /// Define the struct for the get_account_balance API call response.
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct AccountBalanceResponse {
-    balance: String,
-    pending: String,
-    receivable: String,
-    balance_nano: String,
-    pending_nano: String,
-    receivable_nano: String,
+    pub balance: Option<String>,
+    pub pending: Option<String>,
+    pub receivable: Option<String>,
+    pub balance_nano: Option<String>,
+    pub pending_nano: Option<String>,
+    pub receivable_nano: Option<String>,
+}
+
+/// Implement functions for AccountBalanceResponse.
+impl AccountBalanceResponse {
+    /// Implement new to create empty AccountBalanceResponses.
+    pub fn new() -> Self {
+        Self {
+            balance: Some(String::new()),
+            pending: Some(String::new()),
+            receivable: Some(String::new()),
+            balance_nano: Some(String::new()),
+            pending_nano: Some(String::new()),
+            receivable_nano: Some(String::new()),
+        }
+    }
 }
 
 /// Define the struct for the account_create API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct AccountCreateResponse {
-    account: String,
+    account: Option<String>,
 }
 
 /// Define the struct for the account_destroy API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct AccountDestroyResponse {
-    remove: String,
+    remove: Option<String>,
 }
 
 /// Define the struct for the get_wallet_info API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct WalletInfoResponse {
-    balance: String,
-    pending: String,
-    recievable: String,
-    accounts_count: String,
-    adhoc_count: String,
-    deterministic_count: String,
-    deterministic_index: String,
-    accounts_block_count: String,
-    accounts_cemented_block_count: String,
+    balance: Option<String>,
+    pending: Option<String>,
+    recievable: Option<String>,
+    accounts_count: Option<String>,
+    adhoc_count: Option<String>,
+    deterministic_count: Option<String>,
+    deterministic_index: Option<String>,
+    accounts_block_count: Option<String>,
+    accounts_cemented_block_count: Option<String>,
 }
 
 /// Define the struct for each node of the history in the get_account_history API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct WalletHistoryNode {
     #[serde(rename = "type")]
-    history_type: String,
-    account: String,
-    amount: String,
-    local_timestamp: String,
-    hash: String,
+    history_type: Option<String>,
+    account: Option<String>,
+    amount: Option<String>,
+    local_timestamp: Option<String>,
+    hash: Option<String>,
 }
 
 /// Define the struct for the get_account_history API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct WalletHistoryResponse {
-    history: Vec<AccountHistoryNode>,
+    history: Option<Vec<AccountHistoryNode>>,
 }
 
 /// Define the struct for the wallet_create API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct WalletCreateResponse {
-    wallet: String,
+    wallet: Option<String>,
 }
 
 /// Define the struct for the wallet_destroy API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct WalletDestroyResponse {
-    destroy: String,
+    destroy: Option<String>,
 }
 
 /// Define the struct for the content of the block in the get_block_info API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct BlockInfoContent {
     #[serde(rename = "type")]
-    content_type: String,
-    account: String,
-    previous: String,
-    representative: String,
-    balance: String,
-    balance_nano: String,
-    link: String,
-    link_as_account: String,
-    signature: String,
-    work: String,
+    content_type: Option<String>,
+    account: Option<String>,
+    previous: Option<String>,
+    representative: Option<String>,
+    balance: Option<String>,
+    balance_nano: Option<String>,
+    link: Option<String>,
+    link_as_account: Option<String>,
+    signature: Option<String>,
+    work: Option<String>,
 }
 
 /// Define the struct for the get_block_info API call response.
 #[derive(Deserialize, Serialize, Debug)]
 pub struct BlockInfoResponse {
-    block_account: String,
-    amount: String,
-    amount_nano: String,
-    balance: String,
-    balance_nano: String,
-    height: String,
-    local_timestamp: String,
-    successor: String,
-    confirmed: String,
-    content: BlockInfoContent,
-    subtype: String,
+    block_account: Option<String>,
+    amount: Option<String>,
+    amount_nano: Option<String>,
+    balance: Option<String>,
+    balance_nano: Option<String>,
+    height: Option<String>,
+    local_timestamp: Option<String>,
+    successor: Option<String>,
+    confirmed: Option<String>,
+    content: Option<BlockInfoContent>,
+    subtype: Option<String>,
 }
 
 /// Function that gets the version information from the Nano API.

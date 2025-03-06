@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use routes::{get_account_balance, AccountBalanceResponse};
 
 const ACCOUNT_CSS: Asset = asset!("assets/styling/account.css");
 
@@ -9,6 +10,24 @@ pub fn Account() -> Element {
 }
 
 pub fn Balance() -> Element {
+    let account = "nano_19kqrk7taqnprmy1hcchpkdcpfqnpm7knwdhn9qafhd7b94s99ofngf5ent1";
+
+    let balance_future = use_resource(|| async { get_account_balance(account).await });
+    let balance_info: AccountBalanceResponse = match &*balance_future.read_unchecked() {
+        Some(res) => (*res).clone(),
+        None => AccountBalanceResponse::new(),
+    };
+
+    let balance_nano = match balance_info.balance_nano {
+        Some(nano) => nano,
+        None => String::from("0.0"),
+    };
+
+    let pending_nano = match balance_info.pending_nano {
+        Some(nano) => nano,
+        None => String::from("0.0"),
+    };
+
     rsx! {
         document::Link { rel: "stylesheet", href: ACCOUNT_CSS }
         div {
@@ -19,14 +38,14 @@ pub fn Balance() -> Element {
                 div {
                     id: "fill-card",
                     span { id: "sub-heading" , "XNO" }
-                    strong { id: "h1" , "0.0005" }
+                    strong { id: "h1" , {balance_nano.clone()} }
                 }
                 div {
                     id: "fill-card",
                     span { id: "secondary" , "~EUR" }
                     div {
                         id: "secondary" ,
-                        strong { id: "sub-heading" , "0.0005€" }
+                        strong { id: "sub-heading" , {balance_nano} {"€"} }
                     }
                 }
             }
@@ -44,7 +63,7 @@ pub fn Balance() -> Element {
                     div {
                         id: "fill-card",
                         span { style: "display: inline-block; padding-right: 10px; align-items: center;", "XNO" }
-                        strong { id: "sub-heading" , "0.0005" }
+                        strong { id: "sub-heading" , {pending_nano} }
                     }
                 }
             }
