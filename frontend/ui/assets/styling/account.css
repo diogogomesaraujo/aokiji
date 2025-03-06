@@ -1,0 +1,28 @@
+#secondary {
+    color: #959ba2;
+}
+
+#sub-heading {
+    font-size: 18px;
+}
+
+#h1 {
+    font-size: 30px;
+}
+
+#card {
+    background-color: #14181d;
+    max-width: 300px;
+    padding: 20px 30px 20px 30px;
+    display: flex;
+    flex-direction: column;
+    border: 2px #151f27 solid;
+    border-radius: 10px;
+}
+
+#fill-card {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
