@@ -1,14 +1,17 @@
 use dioxus::prelude::*;
-use routes::{get_account_balance, AccountBalanceResponse};
+use routes::*;
 
+/// Const for the Account Section CSS.
 const ACCOUNT_CSS: Asset = asset!("assets/styling/account.css");
 
+/// Account dashboard component that is shown in the main page.
 pub fn Account() -> Element {
     rsx! {
         Balance{}
     }
 }
 
+/// Balance component that goes inside the account component.
 pub fn Balance() -> Element {
     let account = "nano_19kqrk7taqnprmy1hcchpkdcpfqnpm7knwdhn9qafhd7b94s99ofngf5ent1";
 
@@ -18,14 +21,33 @@ pub fn Balance() -> Element {
         None => AccountBalanceResponse::new(),
     };
 
+    let nano_price_future = use_resource(|| async { get_nano_price_euro().await });
+    let nano_price = match &*nano_price_future.read_unchecked() {
+        Some(res) => (*res).clone(),
+        None => NanoPriceResponse {
+            nano: Some(NanoPriceEuro { eur: Some(0.) }),
+        },
+    };
+
     let balance_nano = match balance_info.balance_nano {
-        Some(nano) => nano,
-        None => String::from("0.0"),
+        Some(nano) => match nano.parse::<f32>() {
+            Ok(nano) => nano,
+            Err(_) => 0.,
+        },
+        None => 0.,
     };
 
     let pending_nano = match balance_info.pending_nano {
         Some(nano) => nano,
         None => String::from("0.0"),
+    };
+
+    let nano_price = match nano_price.nano {
+        Some(nano) => match nano.eur {
+            Some(price) => price,
+            None => 0.,
+        },
+        None => 0.,
     };
 
     rsx! {
@@ -38,14 +60,14 @@ pub fn Balance() -> Element {
                 div {
                     id: "fill-card",
                     span { id: "sub-heading" , "XNO" }
-                    strong { id: "h1" , {balance_nano.clone()} }
+                    strong { id: "h1" , {balance_nano.clone().to_string()} }
                 }
                 div {
                     id: "fill-card",
                     span { id: "secondary" , "~EUR" }
                     div {
                         id: "secondary" ,
-                        strong { id: "sub-heading" , {balance_nano} {"€"} }
+                        strong { id: "sub-heading" , {(nano_price * balance_nano).to_string()} {"€"} } // change to actual euro values
                     }
                 }
             }

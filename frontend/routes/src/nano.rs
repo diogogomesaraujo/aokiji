@@ -4,7 +4,19 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Define the current Nano RPC API link as constant (The link can be changed since it follows Nano RPC guidelines).
-const URL: &str = "https://rpc.nano.to";
+const RPC_URL: &str = "https://rpc.nano.to";
+const NANO_PRICE_URL: &str =
+    "https://api.coingecko.com/api/v3/simple/price?ids=nano&vs_currencies=eur";
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct NanoPriceEuro {
+    pub eur: Option<f32>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct NanoPriceResponse {
+    pub nano: Option<NanoPriceEuro>,
+}
 
 /// Define the struct for the get_version API call response.
 #[derive(Deserialize, Serialize, Debug)]
@@ -65,21 +77,6 @@ pub struct AccountBalanceResponse {
     pub balance_nano: Option<String>,
     pub pending_nano: Option<String>,
     pub receivable_nano: Option<String>,
-}
-
-/// Implement functions for AccountBalanceResponse.
-impl AccountBalanceResponse {
-    /// Implement new to create empty AccountBalanceResponses.
-    pub fn new() -> Self {
-        Self {
-            balance: Some(String::new()),
-            pending: Some(String::new()),
-            receivable: Some(String::new()),
-            balance_nano: Some(String::new()),
-            pending_nano: Some(String::new()),
-            receivable_nano: Some(String::new()),
-        }
-    }
 }
 
 /// Define the struct for the account_create API call response.
@@ -169,11 +166,33 @@ pub struct BlockInfoResponse {
     subtype: Option<String>,
 }
 
+/// Implement functions for AccountBalanceResponse.
+impl AccountBalanceResponse {
+    /// Implement new to create empty AccountBalanceResponses.
+    pub fn new() -> Self {
+        Self {
+            balance: Some(String::new()),
+            pending: Some(String::new()),
+            receivable: Some(String::new()),
+            balance_nano: Some(String::new()),
+            pending_nano: Some(String::new()),
+            receivable_nano: Some(String::new()),
+        }
+    }
+}
+
+pub async fn get_nano_price_euro() -> NanoPriceResponse {
+    let client = reqwest::Client::new();
+    let response = client.get(NANO_PRICE_URL).send().await.unwrap();
+
+    response.json::<NanoPriceResponse>().await.unwrap()
+}
+
 /// Function that gets the version information from the Nano API.
 pub async fn get_version() -> VersionResponse {
     let client = reqwest::Client::new();
     let data: HashMap<_, _> = [("action", "version")].into();
-    let response = client.post(URL).json(&data).send().await.unwrap();
+    let response = client.post(RPC_URL).json(&data).send().await.unwrap();
 
     response.json::<VersionResponse>().await.unwrap()
 }
@@ -182,7 +201,7 @@ pub async fn get_version() -> VersionResponse {
 pub async fn get_account_info(account: &str) -> AccountInfoResponse {
     let client = reqwest::Client::new();
     let data: HashMap<_, _> = [("action", "account_info"), ("account", account)].into();
-    let response = client.post(URL).json(&data).send().await.unwrap();
+    let response = client.post(RPC_URL).json(&data).send().await.unwrap();
 
     response.json::<AccountInfoResponse>().await.unwrap()
 }
@@ -197,7 +216,7 @@ pub async fn get_account_history(account: &str, count: i32) -> AccountHistoryRes
         ("count", count.as_str()),
     ]
     .into();
-    let response = client.post(URL).json(&data).send().await.unwrap();
+    let response = client.post(RPC_URL).json(&data).send().await.unwrap();
 
     response.json::<AccountHistoryResponse>().await.unwrap()
 }
@@ -206,7 +225,7 @@ pub async fn get_account_history(account: &str, count: i32) -> AccountHistoryRes
 pub async fn get_account_balance(account: &str) -> AccountBalanceResponse {
     let client = reqwest::Client::new();
     let data: HashMap<_, _> = [("action", "account_info"), ("account", account)].into();
-    let response = client.post(URL).json(&data).send().await.unwrap();
+    let response = client.post(RPC_URL).json(&data).send().await.unwrap();
 
     response.json::<AccountBalanceResponse>().await.unwrap()
 }
@@ -215,7 +234,7 @@ pub async fn get_account_balance(account: &str) -> AccountBalanceResponse {
 pub async fn get_block_info(hash: &str) -> BlockInfoResponse {
     let client = reqwest::Client::new();
     let data: HashMap<_, _> = [("action", "block_info"), ("hash", hash)].into();
-    let response = client.post(URL).json(&data).send().await.unwrap();
+    let response = client.post(RPC_URL).json(&data).send().await.unwrap();
 
     response.json::<BlockInfoResponse>().await.unwrap()
 }
@@ -224,7 +243,7 @@ pub async fn get_block_info(hash: &str) -> BlockInfoResponse {
 pub async fn account_create(wallet: &str) -> AccountCreateResponse {
     let client = reqwest::Client::new();
     let data: HashMap<_, _> = [("action", "account_create"), ("wallet", wallet)].into();
-    let response = client.post(URL).json(&data).send().await.unwrap();
+    let response = client.post(RPC_URL).json(&data).send().await.unwrap();
 
     response.json::<AccountCreateResponse>().await.unwrap()
 }
@@ -238,7 +257,7 @@ pub async fn account_remove(wallet: &str, account: &str) -> AccountDestroyRespon
         ("account", account),
     ]
     .into();
-    let response = client.post(URL).json(&data).send().await.unwrap();
+    let response = client.post(RPC_URL).json(&data).send().await.unwrap();
 
     response.json::<AccountDestroyResponse>().await.unwrap()
 }
@@ -247,7 +266,7 @@ pub async fn account_remove(wallet: &str, account: &str) -> AccountDestroyRespon
 pub async fn get_wallet_info(wallet: &str) -> WalletInfoResponse {
     let client = reqwest::Client::new();
     let data: HashMap<_, _> = [("action", "wallet_info"), ("wallet", wallet)].into();
-    let response = client.post(URL).json(&data).send().await.unwrap();
+    let response = client.post(RPC_URL).json(&data).send().await.unwrap();
 
     response.json::<WalletInfoResponse>().await.unwrap()
 }
@@ -256,7 +275,7 @@ pub async fn get_wallet_info(wallet: &str) -> WalletInfoResponse {
 pub async fn get_wallet_history(wallet: &str) -> WalletHistoryResponse {
     let client = reqwest::Client::new();
     let data: HashMap<_, _> = [("action", "wallet_history"), ("wallet", wallet)].into();
-    let response = client.post(URL).json(&data).send().await.unwrap();
+    let response = client.post(RPC_URL).json(&data).send().await.unwrap();
 
     response.json::<WalletHistoryResponse>().await.unwrap()
 }
@@ -265,7 +284,7 @@ pub async fn get_wallet_history(wallet: &str) -> WalletHistoryResponse {
 pub async fn wallet_create() -> WalletCreateResponse {
     let client = reqwest::Client::new();
     let data: HashMap<_, _> = [("action", "wallet_create")].into();
-    let response = client.post(URL).json(&data).send().await.unwrap();
+    let response = client.post(RPC_URL).json(&data).send().await.unwrap();
 
     response.json::<WalletCreateResponse>().await.unwrap()
 }
@@ -274,7 +293,7 @@ pub async fn wallet_create() -> WalletCreateResponse {
 pub async fn wallet_destroy() -> WalletDestroyResponse {
     let client = reqwest::Client::new();
     let data: HashMap<_, _> = [("action", "wallet_destroy")].into();
-    let response = client.post(URL).json(&data).send().await.unwrap();
+    let response = client.post(RPC_URL).json(&data).send().await.unwrap();
 
     response.json::<WalletDestroyResponse>().await.unwrap()
 }
