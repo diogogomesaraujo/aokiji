@@ -5,6 +5,7 @@ use routes::*;
 const ACCOUNT_CSS: Asset = asset!("assets/styling/account.css");
 
 /// Account dashboard component that is shown in the main page.
+#[component]
 pub fn Account() -> Element {
     rsx! {
         Balance{}
@@ -12,6 +13,7 @@ pub fn Account() -> Element {
 }
 
 /// Balance component that goes inside the account component.
+#[component]
 pub fn Balance() -> Element {
     let account = "nano_19kqrk7taqnprmy1hcchpkdcpfqnpm7knwdhn9qafhd7b94s99ofngf5ent1";
 
@@ -67,7 +69,7 @@ pub fn Balance() -> Element {
                     span { id: "secondary" , "~EUR" }
                     div {
                         id: "secondary" ,
-                        strong { id: "sub-heading" , {(nano_price * balance_nano).to_string()} {"€"} } // change to actual euro values
+                        strong { id: "sub-heading" , {format!("{:.2}", nano_price * balance_nano)} {"€"} } // change to actual euro values
                     }
                 }
             }

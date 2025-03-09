@@ -2,6 +2,3 @@
 
 mod account;
 pub use account::*;
-
-mod hero;
-pub use hero::Hero;

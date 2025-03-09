@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 dioxus = { workspace = true }
 routes = { workspace = true }
+reqwest = { version = "0.12.12" }
