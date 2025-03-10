@@ -30,7 +30,7 @@ pub fn Header() -> Element {
             div {
                 style: "display: flex; flex-direction: column;",
                 a { id:"h2", style: "font-weight: bold;", "Wallet Dashboard" }
-                div { id:"secondary", a { id: "sub-heading", "Hi Diogo, welcome back!" } }
+                div { id:"secondary", a { "Hi Diogo, welcome back!" } }
             }
         }
     }
