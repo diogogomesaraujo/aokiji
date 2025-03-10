@@ -2,13 +2,37 @@ use dioxus::prelude::*;
 use routes::*;
 
 /// Const for the Account Section CSS.
-const ACCOUNT_CSS: Asset = asset!("assets/styling/account.css");
+const WALLET_CSS: Asset = asset!("assets/styling/wallet.css");
 
 /// Account dashboard component that is shown in the main page.
 #[component]
-pub fn Account() -> Element {
+pub fn Wallet() -> Element {
     rsx! {
-        Balance{}
+        div {
+            id: "wallet",
+            Header{}
+            div { style: "display: inline-block; margin-bottom: 14px;" }
+            Balance{}
+        }
+    }
+}
+
+#[component]
+pub fn Header() -> Element {
+    rsx! {
+        div {
+            id: "header",
+            div {
+                id: "circle",
+                style: "display: inline-block; margin-right: 14px;"
+            }
+
+            div {
+                style: "display: flex; flex-direction: column;",
+                a { id:"h2", style: "font-weight: bold;", "Wallet Dashboard" }
+                div { id:"secondary", a { id: "sub-heading", "Hi Diogo, welcome back!" } }
+            }
+        }
     }
 }
 
@@ -53,7 +77,7 @@ pub fn Balance() -> Element {
     };
 
     rsx! {
-        document::Link { rel: "stylesheet", href: ACCOUNT_CSS }
+        document::Link { rel: "stylesheet", href: WALLET_CSS }
         div {
             id: "card",
             span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "TOTAL BALANCE" }
