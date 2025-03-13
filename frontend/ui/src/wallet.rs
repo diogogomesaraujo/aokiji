@@ -2,14 +2,16 @@ use dioxus::prelude::*;
 use routes::*;
 
 /// Const for the Account Section CSS.
-const WALLET_CSS: Asset = asset!("assets/styling/wallet.css");
+const MAIN_CSS: Asset = asset!("assets/styling/main.css");
 
 /// Account dashboard component that is shown in the main page.
 #[component]
 pub fn Wallet() -> Element {
     rsx! {
+        document::Link { rel: "stylesheet", href: MAIN_CSS }
+
         div {
-            id: "wallet",
+            id: "page",
             Header{}
             div { style: "display: inline-block; margin-bottom: 14px;" }
             Balance{}
@@ -18,7 +20,7 @@ pub fn Wallet() -> Element {
 }
 
 #[component]
-pub fn Header() -> Element {
+fn Header() -> Element {
     rsx! {
         div {
             id: "header",
@@ -29,8 +31,8 @@ pub fn Header() -> Element {
 
             div {
                 style: "display: flex; flex-direction: column;",
-                a { id:"h2", style: "font-weight: bold;", "Wallet Dashboard" }
-                div { id:"secondary", a { "Hi Diogo, welcome back!" } }
+                a { id:"h2", style: "font-weight: bold;", "Shelby Company Ltd." }
+                div { id:"secondary", a { "5 Participants" } }
             }
         }
     }
@@ -38,7 +40,7 @@ pub fn Header() -> Element {
 
 /// Balance component that goes inside the account component.
 #[component]
-pub fn Balance() -> Element {
+fn Balance() -> Element {
     let account = "nano_19kqrk7taqnprmy1hcchpkdcpfqnpm7knwdhn9qafhd7b94s99ofngf5ent1";
 
     let balance_future = use_resource(|| async { get_account_balance(account).await });
@@ -77,7 +79,6 @@ pub fn Balance() -> Element {
     };
 
     rsx! {
-        document::Link { rel: "stylesheet", href: WALLET_CSS }
         div {
             id: "card",
             span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "TOTAL BALANCE" }
@@ -93,7 +94,7 @@ pub fn Balance() -> Element {
                     span { id: "secondary" , "~EUR" }
                     div {
                         id: "secondary" ,
-                        strong { id: "sub-heading" , {format!("{:.2}", nano_price * balance_nano)} {"€"} } // change to actual euro values
+                        strong { id: "sub-heading" , {format!("{:.2}", nano_price * balance_nano)} {"€"} }
                     }
                 }
             }
