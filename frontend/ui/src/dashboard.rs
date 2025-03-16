@@ -64,6 +64,16 @@ fn NewTransaction() -> Element {
                     // oninput: move |event| input_text.set(event.value())
                 }
             }
+            div { style: "display: inline-block; margin-bottom: 36px;" }
+            div {
+                id: "column-section",
+                button {
+                    id: "button",
+                    strong { "SEND" },
+                    // value: "{input_text}",
+                    // oninput: move |event| input_text.set(event.value())
+                }
+            }
         }
     }
 }
@@ -78,7 +88,33 @@ fn Transactions() -> Element {
                 id: "column-section",
                 div {
                     id: "transaction",
-
+                    div {
+                        div {
+                            id: "fill-card",
+                            span { id: "sub-heading" , "from " strong { "Evil Corp." } }
+                            span { id: "secondary" , "XNO" }
+                        }
+                        div {
+                            id: "fill-card",
+                            span { id: "secondary" , "from " strong { "Shelby Company Ltd." } }
+                            strong { id: "sub-heading" , "- 0.543" }
+                        }
+                    }
+                }
+                div { style: "display: inline-block; margin-bottom: 14px;" }
+                div {
+                    id: "transaction",
+                    div {
+                        div {
+                            id: "fill-card",
+                            span { id: "sub-heading" , "to " strong { "Shelby Company Ltd." } }
+                            span { id: "secondary" , "XNO" }
+                        }                        div {
+                            id: "fill-card",
+                                span { id: "secondary" , "to " strong { "Evil Corp." } }
+                            strong { id: "sub-heading" , "+ 2.21353" }
+                        }
+                    }
                 }
             }
         }

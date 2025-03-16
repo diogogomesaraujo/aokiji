@@ -65,7 +65,7 @@
 
 #input {
     background-color: #151f27;
-    color: #959ba2;
+    color: white;
     padding: 12px;
     border-radius: 12px;
     border-width: 0px;
@@ -75,4 +75,19 @@
 #input:focus {
     outline-width: 2px;
     outline-color: #151f27;
+}
+
+#button {
+    background-color: #0be8bd;
+    color: #14181d;
+    font-weight: bold;
+    padding: 8px;
+    border-radius: 12px;
+    border-width: 0px;
+    font-family: "Supreme", Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 18px;
+}
+
+#button:hover {
+    opacity: 0.8;
 }
