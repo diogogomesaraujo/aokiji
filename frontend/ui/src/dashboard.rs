@@ -16,6 +16,8 @@ pub fn Dashboard() -> Element {
             NewTransaction{}
             div { style: "display: inline-block; margin-bottom: 14px;" }
             Transactions{}
+            div { style: "display: inline-block; margin-bottom: 14px;" }
+            Wallets{}
         }
     }
 }
@@ -113,6 +115,49 @@ fn Transactions() -> Element {
                             id: "fill-card",
                                 span { id: "secondary" , "to " strong { "Evil Corp." } }
                             strong { id: "sub-heading" , "+ 2.21353" }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn Wallets() -> Element {
+    rsx! {
+        div {
+            id: "card",
+            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "SHARED WALLETS" }
+            div {
+                id: "column-section",
+                div {
+                    id: "transaction",
+                    div {
+                        div {
+                            id: "fill-card",
+                            span { id: "sub-heading" , strong { "Evil Corp." } }
+                            span { id: "secondary" , "XNO" }
+                        }
+                        div {
+                            id: "fill-card",
+                                span { id: "secondary" , "5 Participants" }
+                            strong { id: "sub-heading" , "13482.543" }
+                        }
+                    }
+                }
+                div { style: "display: inline-block; margin-bottom: 14px;" }
+                div {
+                    id: "transaction",
+                    div {
+                        div {
+                            id: "fill-card",
+                            span { id: "sub-heading" , strong { "Shelby Company Ltd." } }
+                            span { id: "secondary" , "XNO" }
+                        }                        div {
+                            id: "fill-card",
+                                span { id: "secondary" ,  "3 Participants" }
+                            strong { id: "sub-heading" , "2.21353" }
                         }
                     }
                 }

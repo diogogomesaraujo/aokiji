@@ -88,6 +88,6 @@
     font-size: 18px;
 }
 
-#button:hover {
+#button:active {
     opacity: 0.8;
 }
