@@ -8,7 +8,6 @@ const MAIN_CSS: Asset = asset!("assets/styling/main.css");
 pub fn Dashboard() -> Element {
     rsx! {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
-
         div {
             id: "page",
             Header{}
@@ -62,6 +61,7 @@ fn NewTransaction() -> Element {
                 span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Amount (XNO):" }
                 input {
                     id: "input",
+                    r#type: "number",
                     // value: "{input_text}",
                     // oninput: move |event| input_text.set(event.value())
                 }
