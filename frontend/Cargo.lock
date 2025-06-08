@@ -1103,6 +1103,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dioxus-material-icons"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ccf38d89d3100bb3dbe38c7c08eef9d87fb81fcec49a4e33ead63fdcf4e67f01"
+dependencies = [
+ "dioxus",
+]
+
+[[package]]
 name = "dioxus-rsx"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4658,6 +4667,7 @@ name = "ui"
 version = "0.1.0"
 dependencies = [
  "dioxus",
+ "dioxus-material-icons",
  "reqwest",
  "routes",
 ]
@@ -5031,7 +5041,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

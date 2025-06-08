@@ -1,4 +1,6 @@
 use dioxus::prelude::*;
+
+use dioxus_material_icons::{MaterialIcon, MaterialIconStylesheet};
 use routes::{
     get_account_balance, get_nano_price_euro, AccountBalanceResponse, NanoPriceEuro,
     NanoPriceResponse,
@@ -12,6 +14,7 @@ const MAIN_CSS: Asset = asset!("assets/styling/main.css");
 pub fn Dashboard() -> Element {
     rsx! {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
+        MaterialIconStylesheet{}
         div {
             id: "page",
             Header{}
@@ -21,6 +24,8 @@ pub fn Dashboard() -> Element {
             StartTransaction{}
             div { style: "display: inline-block; margin-bottom: 14px;" }
             JoinTransaction{}
+            div { style: "display: inline-block; margin-bottom: 14px;" }
+            Transactions{}
         }
     }
 }
@@ -106,7 +111,6 @@ fn Balance() -> Element {
         }
     }
 }
-
 #[component]
 fn Header() -> Element {
     rsx! {
@@ -253,25 +257,54 @@ fn JoinTransaction() -> Element {
 }
 
 #[component]
+fn SendIcon() -> Element {
+    rsx! {
+        div {
+            style: "font-size: 40px; transform: scaleX(-1); color: #CFBC5B;",
+            MaterialIcon { name: "reply" }
+        }
+    }
+}
+
+#[component]
+fn ReceiveIcon() -> Element {
+    rsx! {
+        div {
+            style: "font-size: 40px; color: #5B87CF;",
+            MaterialIcon { name: "reply" }
+        }
+    }
+}
+
+#[component]
 fn Transactions() -> Element {
     rsx! {
         div {
             id: "card",
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "TRANSACTIONS" }
+            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "TRANSACTION HISTORY" }
             div {
                 id: "column-section",
                 div {
                     id: "transaction",
                     div {
+                        style: "display: flex; align-items: center; gap: 12px;",
+                        SendIcon{}
                         div {
-                            id: "fill-card",
-                            span { id: "sub-heading" , "from " strong { "Evil Corp." } }
-                            span { id: "secondary" , "XNO" }
-                        }
-                        div {
-                            id: "fill-card",
-                            span { id: "secondary" , "from " strong { "Shelby Company Ltd." } }
-                            strong { id: "sub-heading" , "-0.543" }
+                            style: "flex: 1;",
+                            div {
+                                id: "fill-card",
+                                span { id: "sub-heading" , style: "text-overflow: ellipsis;
+                                  max-width: 200px; white-space: nowrap;
+                                    overflow: hidden;", strong { "nano_1smubapuampnxtq14taxt8c9rc5f97hj7e8kqer4u6p94cre5g6qq3yxa4f3" } }
+                                span { id: "secondary" , "XNO" }
+                            }
+                            div {
+                                id: "fill-card",
+                                span { id: "secondary" , style: "text-overflow: ellipsis;
+                                  max-width: 200px; white-space: nowrap;
+                                    overflow: hidden;", strong { "E3C52113AABA834B59B7BF4C27CBF5DBDDF0E23D5157AFBA93BC845D1B3C3487" } }
+                                strong { id: "sub-heading" , "2.21353" }
+                            }
                         }
                     }
                 }
@@ -279,14 +312,24 @@ fn Transactions() -> Element {
                 div {
                     id: "transaction",
                     div {
+                        style: "display: flex; align-items: center; gap: 12px;",
+                        ReceiveIcon{}
                         div {
-                            id: "fill-card",
-                            span { id: "sub-heading" , "to " strong { "Shelby Company Ltd." } }
-                            span { id: "secondary" , "XNO" }
-                        }                        div {
-                            id: "fill-card",
-                                span { id: "secondary" , "to " strong { "Evil Corp." } }
-                            strong { id: "sub-heading" , "+ 2.21353" }
+                            style: "flex: 1;",
+                            div {
+                                id: "fill-card",
+                                span { id: "sub-heading" , style: "text-overflow: ellipsis;
+                                  max-width: 200px; white-space: nowrap;
+                                    overflow: hidden;", strong { "nano_1smubapuampnxtq14taxt8c9rc5f97hj7e8kqer4u6p94cre5g6qq3yxa4f3" } }
+                                span { id: "secondary" , "XNO" }
+                            }
+                            div {
+                                id: "fill-card",
+                                span { id: "secondary" , style: "text-overflow: ellipsis;
+                                  max-width: 200px; white-space: nowrap;
+                                    overflow: hidden;", strong { "E3C52113AABA834B59B7BF4C27CBF5DBDDF0E23D5157AFBA93BC845D1B3C3487" } }
+                                strong { id: "sub-heading" , "2.21353" }
+                            }
                         }
                     }
                 }
@@ -294,7 +337,6 @@ fn Transactions() -> Element {
         }
     }
 }
-
 #[component]
 fn Wallets() -> Element {
     rsx! {

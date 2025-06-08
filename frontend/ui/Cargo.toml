@@ -7,3 +7,4 @@ edition = "2021"
 dioxus = { workspace = true }
 routes = { workspace = true }
 reqwest = { version = "0.12.12" }
+dioxus-material-icons = "3.0.0"
