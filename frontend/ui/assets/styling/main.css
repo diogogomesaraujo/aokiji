@@ -24,7 +24,7 @@ body {
     padding: 20px 30px 20px 30px;
     display: flex;
     flex-direction: column;
-    border: 2px #161e26 solid;
+    border: 3px #161e26 solid;
     border-radius: 12px;
 }
 
@@ -104,5 +104,34 @@ body {
 }
 
 #button:active {
+    opacity: 0.8;
+}
+
+#secondary-button {
+    background-color: #cfbc5b;
+    color: #0f161d;
+    font-weight: bold;
+    padding: 8px;
+    border-radius: 12px;
+    border-width: 0px;
+    font-family: "Inter", sans-serif;
+    font-size: 18px;
+}
+
+#secondary-button:active {
+    opacity: 0.8;
+}
+
+#menu-button {
+    background-color: #0f161d;
+    font-size: 14px;
+    padding-left: 10px;
+    padding-right: 10px;
+    border: 3px #161e26 solid;
+    border-radius: 12px;
+    color: white;
+}
+
+#menu-button:active {
     opacity: 0.8;
 }

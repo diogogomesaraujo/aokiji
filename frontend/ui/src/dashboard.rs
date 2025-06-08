@@ -6,31 +6,54 @@ use routes::{
     NanoPriceResponse,
 };
 
-/// Const for the Account Section CSS.
 const MAIN_CSS: Asset = asset!("assets/styling/main.css");
 
-/// Account dashboard component that is shown in the main page.
 #[component]
 pub fn Dashboard() -> Element {
+    let mut menu_item = use_signal(|| "account_details".to_string());
     rsx! {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         MaterialIconStylesheet{}
         div {
             id: "page",
             Header{}
+            div { style: "display: inline-block; margin-bottom: 28px;" }
+            div {
+                id: "header",
+                div {
+                    style: "display: flex; flex-direction: row;",
+                    button { id: "menu-button", onclick: move |_| menu_item.set("account_details".to_string()), "Account Details" }
+                    div { style: "display: inline-block; margin-left: 14px;" }
+                    button { id: "menu-button", onclick: move |_| menu_item.set("transaction".to_string()), "Transaction" }
+                    div { style: "display: inline-block; margin-left: 14px;" }
+                    button { id: "menu-button", onclick: move |_| menu_item.set("history".to_string()), "History" }
+                }
+            }
             div { style: "display: inline-block; margin-bottom: 14px;" }
-            Balance{}
-            div { style: "display: inline-block; margin-bottom: 14px;" }
-            StartTransaction{}
-            div { style: "display: inline-block; margin-bottom: 14px;" }
-            JoinTransaction{}
-            div { style: "display: inline-block; margin-bottom: 14px;" }
-            Transactions{}
+            match menu_item.to_string().as_str() {
+                "account_details" => {
+                    rsx! {
+                        Balance{}
+                    }
+                },
+                "transaction" => {
+                    rsx! {
+                        StartTransaction{}
+                        div { style: "display: inline-block; margin-bottom: 14px;" }
+                        JoinTransaction{}
+                    }
+                },
+                "history" => {
+                    rsx! {
+                        Transactions{}
+                    }
+                },
+                _ => rsx!{}
+            }
         }
     }
 }
 
-/// Balance component that goes inside the account component.
 #[component]
 fn Balance() -> Element {
     let account = "nano_19kqrk7taqnprmy1hcchpkdcpfqnpm7knwdhn9qafhd7b94s99ofngf5ent1";
@@ -111,6 +134,7 @@ fn Balance() -> Element {
         }
     }
 }
+
 #[component]
 fn Header() -> Element {
     rsx! {
@@ -246,7 +270,7 @@ fn JoinTransaction() -> Element {
             div {
                 id: "column-section",
                 button {
-                    id: "button",
+                    id: "secondary-button",
                     "Join",
                     // value: "{input_text}",
                     // oninput: move |event| input_text.set(event.value())
