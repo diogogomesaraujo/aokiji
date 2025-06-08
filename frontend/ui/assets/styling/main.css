@@ -1,3 +1,7 @@
+body {
+    font-family: "Inter", sans-serif;
+}
+
 #secondary {
     color: #959ba2;
 }
@@ -15,12 +19,12 @@
 }
 
 #card {
-    background-color: #14181d;
+    background-color: #0f161d;
     width: 400px;
     padding: 20px 30px 20px 30px;
     display: flex;
     flex-direction: column;
-    border: 2px #151f27 solid;
+    border: 2px #161e26 solid;
     border-radius: 12px;
 }
 
@@ -45,7 +49,7 @@
 }
 
 #circle {
-    background-color: #0be8bd;
+    background-color: #5b87cf;
     border-radius: 50%;
     height: 45px;
     width: 45px;
@@ -64,7 +68,7 @@
 }
 
 #input {
-    background-color: #151f27;
+    background-color: #161e26;
     color: white;
     padding: 12px;
     border-radius: 12px;
@@ -72,19 +76,30 @@
     font-size: 15px;
 }
 
+#select {
+    background-color: #161e26;
+    color: white;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    font-size: 15px;
+    appearance: none;
+    outline: none;
+}
+
 #input:focus {
     outline-width: 2px;
-    outline-color: #151f27;
+    outline-color: #0f161d;
 }
 
 #button {
-    background-color: #0be8bd;
-    color: #14181d;
+    background-color: #5b87cf;
+    color: #0f161d;
     font-weight: bold;
     padding: 8px;
     border-radius: 12px;
     border-width: 0px;
-    font-family: "Supreme", Tahoma, Geneva, Verdana, sans-serif;
+    font-family: "Inter", sans-serif;
     font-size: 18px;
 }
 

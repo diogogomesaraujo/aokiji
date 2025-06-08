@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use ui::{Dashboard, Login, Wallet};
+use ui::Dashboard;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");

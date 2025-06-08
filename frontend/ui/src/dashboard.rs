@@ -1,4 +1,8 @@
 use dioxus::prelude::*;
+use routes::{
+    get_account_balance, get_nano_price_euro, AccountBalanceResponse, NanoPriceEuro,
+    NanoPriceResponse,
+};
 
 /// Const for the Account Section CSS.
 const MAIN_CSS: Asset = asset!("assets/styling/main.css");
@@ -12,11 +16,93 @@ pub fn Dashboard() -> Element {
             id: "page",
             Header{}
             div { style: "display: inline-block; margin-bottom: 14px;" }
-            NewTransaction{}
+            Balance{}
             div { style: "display: inline-block; margin-bottom: 14px;" }
-            Transactions{}
+            StartTransaction{}
             div { style: "display: inline-block; margin-bottom: 14px;" }
-            Wallets{}
+            JoinTransaction{}
+        }
+    }
+}
+
+/// Balance component that goes inside the account component.
+#[component]
+fn Balance() -> Element {
+    let account = "nano_19kqrk7taqnprmy1hcchpkdcpfqnpm7knwdhn9qafhd7b94s99ofngf5ent1";
+
+    let balance_future = use_resource(|| async { get_account_balance(account).await });
+    let balance_info: AccountBalanceResponse = match &*balance_future.read_unchecked() {
+        Some(res) => (*res).clone(),
+        None => AccountBalanceResponse::new(),
+    };
+
+    let nano_price_future = use_resource(|| async { get_nano_price_euro().await });
+    let nano_price = match &*nano_price_future.read_unchecked() {
+        Some(res) => (*res).clone(),
+        None => NanoPriceResponse {
+            nano: Some(NanoPriceEuro { eur: Some(0.) }),
+        },
+    };
+
+    let balance_nano = match balance_info.balance_nano {
+        Some(nano) => match nano.parse::<f32>() {
+            Ok(nano) => nano,
+            Err(_) => 0.,
+        },
+        None => 0.,
+    };
+
+    let pending_nano = match balance_info.pending_nano {
+        Some(nano) => nano,
+        None => String::from("0.0"),
+    };
+
+    let nano_price = match nano_price.nano {
+        Some(nano) => match nano.eur {
+            Some(price) => price,
+            None => 0.,
+        },
+        None => 0.,
+    };
+
+    rsx! {
+        div {
+            id: "card",
+            span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "TOTAL BALANCE" }
+            div {
+                style: "display: inline-block; margin-bottom: 36px;",
+                div {
+                    id: "fill-card",
+                    span { id: "sub-heading" , "XNO" }
+                    strong { id: "h1" , {balance_nano.clone().to_string()} }
+                }
+                div {
+                    id: "fill-card",
+                    span { id: "secondary" , "~EUR" }
+                    div {
+                        id: "secondary" ,
+                        strong { id: "sub-heading" , {format!("{:.2}", nano_price * balance_nano)} {"€"} }
+                    }
+                }
+            }
+            div {
+                div {
+                    id: "container",
+                    style: "display: inline-block; margin-bottom: 14px;",
+                    div {
+                        id: "fill-card",
+                        span { id: "secondary", "PENDING" }
+                    }
+                }
+                div {
+                    id: "container",
+                    div {
+                        id: "fill-card",
+                        span { style: "display: inline-block; padding-right: 10px; align-items: center;", "XNO" }
+                        strong { id: "sub-heading" , {pending_nano} }
+                    }
+                }
+            }
         }
     }
 }
@@ -27,43 +113,65 @@ fn Header() -> Element {
         div {
             id: "header",
             div {
-                id: "circle",
-                style: "display: inline-block; margin-right: 14px;"
-            }
-
-            div {
                 style: "display: flex; flex-direction: column;",
-                a { id:"h2", style: "font-weight: bold;", "Dashboard" }
-                div { id:"secondary", a { "Hi " strong { "Diogo" } ", welcome back!" } }
+                a { id:"h2", style: "font-weight: bold; text-overflow: ellipsis;
+                  max-width: 400px; white-space: nowrap;
+                    overflow: hidden;", "nano_1smubapuampnxtq14taxt8c9rc5f97hj7e8kqer4u6p94cre5g6qq3yxa4f3" }
+                div { id:"secondary", a { "3 Participants" } }
             }
         }
     }
 }
 
 #[component]
-fn NewTransaction() -> Element {
+fn StartTransaction() -> Element {
+    let mut transaction_type = use_signal(|| "SEND".to_string());
+    let mut receivers_account = use_signal(|| "".to_string());
+    let mut amount = use_signal(|| "0".to_string());
     rsx! {
         div {
             id: "card",
             span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "START TRANSACTION" }
             div {
                 id: "column-section",
-                span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Wallet:" }
-                input {
-                    id: "input",
-                    // value: "{input_text}",
-                    // oninput: move |event| input_text.set(event.value())
+                span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Type:" }
+                select {
+                    id: "select",
+                    onchange: move |event| transaction_type.set(event.value()),
+                    option { value: "SEND", "SEND" }
+                    option { value: "RECEIVE", "RECEIVE" }
+                    option { value: "OPEN", "OPEN" }
                 }
             }
-            div { style: "display: inline-block; margin-bottom: 14px;" }
-            div {
-                id: "column-section",
-                span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Amount (XNO):" }
-                input {
-                    id: "input",
-                    r#type: "number",
-                    // value: "{input_text}",
-                    // oninput: move |event| input_text.set(event.value())
+            match transaction_type.to_string().as_str() {
+                "SEND" => {
+                    rsx! {
+                        div { style: "display: inline-block; margin-bottom: 14px;" }
+                        div {
+                            id: "column-section",
+                            span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Receiver's Account:" }
+                            input {
+                                id: "input",
+                                onchange: move |event| receivers_account.set(event.value()),
+                            }
+                        }
+                        div { style: "display: inline-block; margin-bottom: 14px;" }
+                        div {
+                            id: "column-section",
+                            span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Amount (XNO):" }
+                            input {
+                                id: "input",
+                                r#type: "number",
+                                min: "0",
+                                onchange: move |event| amount.set(event.value()),
+
+                            }
+                        }
+                    }
+                }
+                _ => {
+                    rsx! {
+                    }
                 }
             }
             div { style: "display: inline-block; margin-bottom: 36px;" }
@@ -71,7 +179,71 @@ fn NewTransaction() -> Element {
                 id: "column-section",
                 button {
                     id: "button",
-                    strong { "SEND" },
+                    "Start",
+                    // value: "{input_text}",
+                    // oninput: move |event| input_text.set(event.value())
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn JoinTransaction() -> Element {
+    let mut transaction_type = use_signal(|| "SEND".to_string());
+    let mut ip_address = use_signal(|| "127.0.0.1".to_string());
+    let mut amount = use_signal(|| "0".to_string());
+    rsx! {
+        div {
+            id: "card",
+            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "JOIN TRANSACTION" }
+            div {
+                id: "column-section",
+                span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Type:" }
+                select {
+                    id: "select",
+                    onchange: move |event| transaction_type.set(event.value()),
+                    option { value: "SEND", "SEND" }
+                    option { value: "RECEIVE", "RECEIVE" }
+                    option { value: "OPEN", "OPEN" }
+                }
+            }
+            div { style: "display: inline-block; margin-bottom: 14px;" }
+            div {
+                id: "column-section",
+                span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "IP Address:" }
+                input {
+                    id: "input",
+                    onchange: move |event| ip_address.set(event.value()),
+                }
+            }
+            div { style: "display: inline-block; margin-bottom: 14px;" }
+            match transaction_type.to_string().as_str() {
+                "SEND" => {
+                    rsx! {
+                        div {
+                            id: "column-section",
+                            span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Amount (XNO):" }
+                            input {
+                                id: "input",
+                                r#type: "number",
+                                min: "0",
+                                onchange: move |event| amount.set(event.value()),
+
+                            }
+                        }
+                    }
+                }
+                _ => {
+                    rsx!{}
+                }
+            }
+            div { style: "display: inline-block; margin-bottom: 36px;" }
+            div {
+                id: "column-section",
+                button {
+                    id: "button",
+                    "Join",
                     // value: "{input_text}",
                     // oninput: move |event| input_text.set(event.value())
                 }
@@ -99,7 +271,7 @@ fn Transactions() -> Element {
                         div {
                             id: "fill-card",
                             span { id: "secondary" , "from " strong { "Shelby Company Ltd." } }
-                            strong { id: "sub-heading" , "- 0.543" }
+                            strong { id: "sub-heading" , "-0.543" }
                         }
                     }
                 }
