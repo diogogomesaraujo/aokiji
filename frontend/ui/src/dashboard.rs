@@ -34,6 +34,10 @@ pub fn Dashboard() -> Element {
                 "account_details" => {
                     rsx! {
                         Balance{}
+                        div { style: "display: inline-block; margin-bottom: 14px;" }
+                        Participants{}
+                        div { style: "display: inline-block; margin-bottom: 14px;" }
+                        AccountInfo{}
                     }
                 },
                 "transaction" => {
@@ -301,6 +305,26 @@ fn ReceiveIcon() -> Element {
 }
 
 #[component]
+fn PersonIconBlue() -> Element {
+    rsx! {
+        div {
+            style: "font-size: 40px; transform: scaleX(-1); color: #5B87CF;",
+            MaterialIcon { name: "person" }
+        }
+    }
+}
+
+#[component]
+fn PersonIconYellow() -> Element {
+    rsx! {
+        div {
+            style: "font-size: 40px; transform: scaleX(-1); color: #CFBC5B;",
+            MaterialIcon { name: "person" }
+        }
+    }
+}
+
+#[component]
 fn Transactions() -> Element {
     rsx! {
         div {
@@ -361,6 +385,111 @@ fn Transactions() -> Element {
         }
     }
 }
+
+#[component]
+fn Participants() -> Element {
+    rsx! {
+        div {
+            id: "card",
+            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "PARTICIPANTS" }
+            div {
+                id: "column-section",
+                div {
+                    id: "transaction",
+                    div {
+                        style: "display: flex; align-items: center; gap: 12px;",
+                        PersonIconYellow{}
+                        div {
+                            style: "flex: 1;",
+                            div {
+                                id: "fill-card",
+                                span { id: "sub-heading" , style: "text-overflow: ellipsis;
+                                  max-width: 340px; white-space: nowrap;
+                                    overflow: hidden;", strong { "E3C52113AABA834B59B7BF4C27CBF5DBDDF0E23D5157AFBA93BC845D1B3C3487" } }
+                            }
+                        }
+                    }
+                }
+                div { style: "display: inline-block; margin-bottom: 14px;" }
+                div {
+                    id: "transaction",
+                    div {
+                        style: "display: flex; align-items: center; gap: 12px;",
+                        PersonIconBlue{}
+                        div {
+                            style: "flex: 1;",
+                            div {
+                                id: "fill-card",
+                                span { id: "sub-heading" , style: "text-overflow: ellipsis;
+                                  max-width: 340px; white-space: nowrap;
+                                    overflow: hidden;", strong { "E3C52113AABA834B59B7BF4C27CBF5DBDDF0E23D5157AFBA93BC845D1B3C3487" } }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn AccountInfo() -> Element {
+    rsx! {
+        div {
+            id: "card",
+            span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "FRONTIER" }
+            div {
+                div {
+                    id: "fill-card",
+                    span { id: "sub-heading" , style: "text-overflow: ellipsis;
+                      max-width: 390px; white-space: nowrap;
+                        overflow: hidden;", span { "E3C52113AABA834B59B7BF4C27CBF5DBDDF0E23D5157AFBA93BC845D1B3C3487" } }
+                }
+            }
+            div { style: "display: inline-block; margin-bottom: 28px;" }
+            span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "OPEN BLOCK" }
+            div {
+                div {
+                    id: "fill-card",
+                    span { id: "sub-heading" , style: "text-overflow: ellipsis;
+                      max-width: 390px; white-space: nowrap;
+                        overflow: hidden;", span { "E3C52113AABA834B59B7BF4C27CBF5DBDDF0E23D5157AFBA93BC845D1B3C3487" } }
+                }
+            }
+            div { style: "display: inline-block; margin-bottom: 28px;" }
+            span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "REPRESENTATIVE" }
+            div {
+                div {
+                    id: "fill-card",
+                    span { id: "sub-heading" , style: "text-overflow: ellipsis;
+                      max-width: 390px; white-space: nowrap;
+                        overflow: hidden;", span { "nano_1zuksmn4e8tjw1ch8m8fbrwy5459bx8645o9euj699rs13qy6ysjhrewioey" } }
+                }
+            }
+            div { style: "display: inline-block; margin-bottom: 28px;" }
+            span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "BALANCE" }
+            div {
+                div {
+                    id: "fill-card",
+                    span { id: "sub-heading" , style: "text-overflow: ellipsis;
+                      max-width: 390px; white-space: nowrap;
+                        overflow: hidden;", span { "16756113036167018697960000000000" } }
+                }
+            }
+            div { style: "display: inline-block; margin-bottom: 28px;" }
+            span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "BLOCK COUNT" }
+            div {
+                div {
+                    id: "fill-card",
+                    span { id: "sub-heading" , style: "text-overflow: ellipsis;
+                      max-width: 390px; white-space: nowrap;
+                        overflow: hidden;", span { "202" } }
+                }
+            }
+        }
+    }
+}
+
 #[component]
 fn Wallets() -> Element {
     rsx! {
