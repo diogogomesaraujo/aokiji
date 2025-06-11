@@ -6,7 +6,7 @@ use routes::{
     NanoPriceResponse,
 };
 
-const MAIN_CSS: Asset = asset!("assets/styling/main.css");
+use crate::MAIN_CSS;
 
 #[component]
 pub fn Dashboard() -> Element {
