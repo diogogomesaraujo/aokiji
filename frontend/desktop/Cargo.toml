@@ -7,7 +7,7 @@ edition = "2021"
 dioxus = { workspace = true, features = ["desktop"] }
 dioxus-desktop = "0.6.3"
 image = "0.25.6"
-reqwest = { version = "0.12.12", features = ["json"] }
+reqwest = { version = "0.12.15", features = ["json"] }
 serde = { version = "1.0.218", features = ["derive"] }
 tao = "0.33.0"
 ui = { workspace = true }
