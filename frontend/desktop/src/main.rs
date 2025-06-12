@@ -3,10 +3,24 @@ use dioxus::{
     prelude::*,
 };
 use dioxus_desktop::{tao::platform::macos::WindowBuilderExtMacOS, LogicalSize};
-use ui::Home;
+use dioxus_router::prelude::*;
+
+mod dashboard;
+use dashboard::Dashboard;
+
+mod home;
+use home::Home;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
+
+#[derive(Clone, Routable, Debug, PartialEq)]
+pub enum Route {
+    #[route("/")]
+    Home {},
+    #[route("/dashboard")]
+    Dashboard {},
+}
 
 fn main() {
     dioxus::LaunchBuilder::new()
@@ -31,6 +45,6 @@ fn App() -> Element {
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }
-            Home{}
+        Router::<Route>{}
     }
 }

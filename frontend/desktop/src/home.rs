@@ -2,10 +2,12 @@ use std::time::Duration;
 
 use dioxus::prelude::*;
 use dioxus_material_icons::MaterialIconStylesheet;
+use dioxus_router::hooks::use_navigator;
 
-use crate::MAIN_CSS;
+use crate::Route;
 
 const PORT: u32 = 6705;
+const MAIN_CSS: Asset = asset!("/assets/styling/main.css");
 
 #[component]
 pub fn Home() -> Element {
@@ -23,14 +25,20 @@ pub fn Home() -> Element {
 
 #[component]
 fn CreateAccountSession() -> Element {
-    let mut participants = use_signal(|| "0".to_string());
-    let mut threshold = use_signal(|| "0".to_string());
+    let mut participants = use_signal(|| "2".to_string());
+    let mut threshold = use_signal(|| "2".to_string());
     let mut path = use_signal(|| "account.json".to_string());
     let mut operation_type = use_signal(|| "OPEN".to_string());
     let mut ip_address = use_signal(|| "localhost".to_string());
+    let mut is_completed = use_signal_sync(|| false);
 
-    let mut server_handle = use_signal(|| None::<tokio::task::JoinHandle<()>>);
-    let mut client_handle = use_signal(|| None::<tokio::task::JoinHandle<()>>);
+    let nav = use_navigator();
+
+    use_effect(move || {
+        if is_completed() {
+            nav.push(Route::Dashboard {});
+        }
+    });
 
     let open_and_connect_to_socket = move |_| {
         let participants = participants.read().parse::<u32>().unwrap_or(0);
@@ -62,9 +70,12 @@ fn CreateAccountSession() -> Element {
             };
         });
 
-        server_handle.set(Some(server));
-        client_handle.set(Some(client));
-        println!("Server and Clients listening.")
+        tokio::spawn(async move {
+            let _ = tokio::join!(server, client);
+            is_completed.set(true);
+        });
+
+        println!("Server and Clients listening.");
     };
 
     let connect_to_socket = move |_| {
@@ -82,8 +93,12 @@ fn CreateAccountSession() -> Element {
             };
         });
 
-        client_handle.set(Some(client));
-        println!("Client listening.")
+        tokio::spawn(async move {
+            let _ = tokio::join!(client);
+            is_completed.set(true);
+        });
+
+        println!("Client listening.");
     };
 
     rsx! {

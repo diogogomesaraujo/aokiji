@@ -4,10 +4,16 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+frost-sig = { git = "https://github.com/diogogomesaraujo/frost-sig.git" }
 dioxus = { workspace = true, features = ["desktop"] }
 dioxus-desktop = "0.6.3"
+dioxus-material-icons = "3.0.0"
+dioxus-router = "0.6.3"
 image = "0.25.6"
 reqwest = { version = "0.12.15", features = ["json"] }
 serde = { version = "1.0.218", features = ["derive"] }
 tao = "0.33.0"
-ui = { workspace = true }
+routes = { workspace = true }
+futures = "0.3.31"
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7.14", features = ["full"] }

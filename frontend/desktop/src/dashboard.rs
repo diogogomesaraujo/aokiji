@@ -6,7 +6,7 @@ use routes::{
     NanoPriceResponse,
 };
 
-use crate::MAIN_CSS;
+const MAIN_CSS: Asset = asset!("/assets/styling/main.css");
 
 #[component]
 pub fn Dashboard() -> Element {
@@ -288,7 +288,7 @@ fn JoinTransaction() -> Element {
 fn SendIcon() -> Element {
     rsx! {
         div {
-            style: "font-size: 40px; transform: scaleX(-1); color: #CFBC5B;",
+            style: "font-size: 40px; transform: scaleX(-1); color: #B7D0FE;",
             MaterialIcon { name: "reply" }
         }
     }
@@ -318,7 +318,7 @@ fn PersonIconBlue() -> Element {
 fn PersonIconYellow() -> Element {
     rsx! {
         div {
-            style: "font-size: 40px; transform: scaleX(-1); color: #CFBC5B;",
+            style: "font-size: 40px; transform: scaleX(-1); color: #B7D0FE;",
             MaterialIcon { name: "person" }
         }
     }
