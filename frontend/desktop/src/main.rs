@@ -3,7 +3,7 @@ use dioxus::{
     prelude::*,
 };
 use dioxus_desktop::{tao::platform::macos::WindowBuilderExtMacOS, LogicalSize};
-use ui::{Dashboard, Home};
+use ui::Home;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");

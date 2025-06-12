@@ -25,20 +25,20 @@ pub fn Home() -> Element {
 fn CreateAccountSession() -> Element {
     let mut participants = use_signal(|| "0".to_string());
     let mut threshold = use_signal(|| "0".to_string());
-    let mut path = use_signal(|| "".to_string());
+    let mut path = use_signal(|| "account.json".to_string());
     let mut operation_type = use_signal(|| "OPEN".to_string());
-    let mut ip_address = use_signal(|| "127.0.0.1".to_string());
+    let mut ip_address = use_signal(|| "localhost".to_string());
 
     let mut server_handle = use_signal(|| None::<tokio::task::JoinHandle<()>>);
     let mut client_handle = use_signal(|| None::<tokio::task::JoinHandle<()>>);
 
-    let open_socket = move |_| {
+    let open_and_connect_to_socket = move |_| {
         let participants = participants.read().parse::<u32>().unwrap_or(0);
         let threshold = threshold.read().parse::<u32>().unwrap_or(0);
         let path = path.read().clone();
 
         let server = tokio::spawn(async move {
-            match frost_sig::server::keygen_server::run("127.0.0.1", PORT, participants, threshold)
+            match frost_sig::server::keygen_server::run("localhost", PORT, participants, threshold)
                 .await
             {
                 Ok(_) => {
@@ -52,7 +52,7 @@ fn CreateAccountSession() -> Element {
 
         let client = tokio::spawn(async move {
             tokio::time::sleep(Duration::from_secs(2)).await;
-            match frost_sig::client::keygen_client::run("127.0.0.1", PORT, &path).await {
+            match frost_sig::client::keygen_client::run("localhost", PORT, &path).await {
                 Ok(_) => {
                     println!("Created the server like wonders!")
                 }
@@ -63,8 +63,27 @@ fn CreateAccountSession() -> Element {
         });
 
         server_handle.set(Some(server));
-        server_handle.set(Some(client));
-        println!("Server listening.")
+        client_handle.set(Some(client));
+        println!("Server and Clients listening.")
+    };
+
+    let connect_to_socket = move |_| {
+        let path = path.read().clone();
+        let ip_address = ip_address.read().clone();
+
+        let client = tokio::spawn(async move {
+            match frost_sig::client::keygen_client::run(&ip_address, PORT, &path).await {
+                Ok(_) => {
+                    println!("Created the server like wonders!")
+                }
+                Err(e) => {
+                    eprintln!("Server error: {}", e);
+                }
+            };
+        });
+
+        client_handle.set(Some(client));
+        println!("Client listening.")
     };
 
     rsx! {
@@ -89,7 +108,8 @@ fn CreateAccountSession() -> Element {
                     input {
                         id: "input",
                         r#type: "number",
-                        min: "0",
+                        initial_value: 2,
+                        min: 2,
                         onchange: move |event| participants.set(event.value()),
 
                     }
@@ -101,7 +121,9 @@ fn CreateAccountSession() -> Element {
                     input {
                         id: "input",
                         r#type: "number",
-                        min: "0",
+                        value: 2,
+                        min: 2,
+                        max: participants,
                         onchange: move |event| threshold.set(event.value()),
 
                     }
@@ -109,9 +131,10 @@ fn CreateAccountSession() -> Element {
                 div { style: "display: inline-block; margin-bottom: 14px;" }
                 div {
                     id: "column-section",
-                    span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Save to Path:" }
+                    span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Save to File:" }
                     input {
                         id: "input",
+                        initial_value: path,
                         onchange: move |event| path.set(event.value()),
                     }
                 }
@@ -124,22 +147,33 @@ fn CreateAccountSession() -> Element {
                                 span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "IP Address:" }
                                 input {
                                     id: "input",
+                                    initial_value: ip_address,
                                     onchange: move |event| ip_address.set(event.value()),
+                                }
+                            }
+                            div { style: "display: inline-block; margin-bottom: 36px;" }
+                            div {
+                                id: "column-section",
+                                button {
+                                    id: "button",
+                                    onclick: connect_to_socket,
+                                    "Join",
                                 }
                             }
                         }
                     }
-                    _ => rsx!{}
+                    _ => rsx!{
+                        div { style: "display: inline-block; margin-bottom: 36px;" }
+                        div {
+                            id: "column-section",
+                            button {
+                                id: "button",
+                                onclick: open_and_connect_to_socket,
+                                "Create",
+                            }
+                        }
+                    }
                 }
-            div { style: "display: inline-block; margin-bottom: 36px;" }
-            div {
-                id: "column-section",
-                button {
-                    id: "button",
-                    onclick: open_socket,
-                    "Create",
-                }
-            }
         }
     }
 }
