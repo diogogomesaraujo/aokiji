@@ -9,6 +9,7 @@ mod dashboard;
 use dashboard::Dashboard;
 
 mod home;
+use frost_sig::client::SignInput;
 use home::Home;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
@@ -20,6 +21,21 @@ pub enum Route {
     Home {},
     #[route("/dashboard")]
     Dashboard {},
+}
+
+#[derive(Clone, Debug)]
+pub struct AppState {
+    pub account_path: String,
+    pub sign_input: Option<SignInput>,
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self {
+            account_path: "".to_string(),
+            sign_input: None,
+        }
+    }
 }
 
 fn main() {
@@ -34,6 +50,7 @@ fn main() {
                     .with_decorations(true)
                     .with_has_shadow(true)
                     .with_always_on_top(false)
+                    .with_focused(true)
                     .with_transparent(false),
             ),
         )
@@ -42,6 +59,8 @@ fn main() {
 
 #[component]
 fn App() -> Element {
+    use_context_provider(|| Signal::new(AppState::default()));
+
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: MAIN_CSS }

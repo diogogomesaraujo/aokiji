@@ -6,11 +6,16 @@ use routes::{
     NanoPriceResponse,
 };
 
+use crate::AppState;
+
 const MAIN_CSS: Asset = asset!("/assets/styling/main.css");
 
 #[component]
 pub fn Dashboard() -> Element {
     let mut menu_item = use_signal(|| "account_details".to_string());
+
+    let mut app_state = use_context::<Signal<AppState>>();
+
     rsx! {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
         MaterialIconStylesheet{}

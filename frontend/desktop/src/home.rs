@@ -1,10 +1,15 @@
-use std::time::Duration;
+use std::{
+    fs::File,
+    io::{BufReader, Read},
+    time::Duration,
+};
 
 use dioxus::prelude::*;
 use dioxus_material_icons::MaterialIconStylesheet;
 use dioxus_router::hooks::use_navigator;
+use frost_sig::client::SignInput;
 
-use crate::Route;
+use crate::{AppState, Route};
 
 const PORT: u32 = 6705;
 const MAIN_CSS: Asset = asset!("/assets/styling/main.css");
@@ -32,10 +37,29 @@ fn CreateAccountSession() -> Element {
     let mut ip_address = use_signal(|| "localhost".to_string());
     let mut is_completed = use_signal_sync(|| false);
 
+    let mut app_state = use_context::<Signal<AppState>>();
+
     let nav = use_navigator();
 
     use_effect(move || {
         if is_completed() {
+            app_state.write().account_path = path.read().to_string();
+
+            let sign_input: Option<SignInput> = {
+                match File::open(path.read().to_string()) {
+                    Ok(file) => {
+                        let mut buf_reader = BufReader::new(file);
+                        let mut contents = String::new();
+                        buf_reader.read_to_string(&mut contents).unwrap();
+
+                        Some(serde_json::from_str::<SignInput>(&contents).unwrap())
+                    }
+                    Err(_) => None,
+                }
+            };
+
+            app_state.write().sign_input = sign_input;
+
             nav.push(Route::Dashboard {});
         }
     });
@@ -196,6 +220,31 @@ fn CreateAccountSession() -> Element {
 #[component]
 fn OpenAccount() -> Element {
     let mut path = use_signal(|| "".to_string());
+
+    let mut app_state = use_context::<Signal<AppState>>();
+    let nav = use_navigator();
+
+    let open_dashboard_with_account = move |_| {
+        app_state.write().account_path = path.read().to_string();
+
+        let sign_input: Option<SignInput> = {
+            match File::open(path.read().to_string()) {
+                Ok(file) => {
+                    let mut buf_reader = BufReader::new(file);
+                    let mut contents = String::new();
+                    buf_reader.read_to_string(&mut contents).unwrap();
+
+                    Some(serde_json::from_str::<SignInput>(&contents).unwrap())
+                }
+                Err(_) => None,
+            }
+        };
+
+        app_state.write().sign_input = sign_input;
+
+        nav.push(Route::Dashboard {});
+    };
+
     rsx! {
         div {
             id: "card",
@@ -227,9 +276,8 @@ fn OpenAccount() -> Element {
                 id: "column-section",
                 button {
                     id: "secondary-button",
+                    onclick: open_dashboard_with_account,
                     "Open",
-                    // value: "{input_text}",
-                    // oninput: move |event| input_text.set(event.value())
                 }
             }
         }
