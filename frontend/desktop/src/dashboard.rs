@@ -1,20 +1,24 @@
+use std::time::Duration;
+
 use dioxus::prelude::*;
 
 use dioxus_material_icons::{MaterialIcon, MaterialIconStylesheet};
-use routes::{
-    get_account_balance, get_nano_price_euro, AccountBalanceResponse, NanoPriceEuro,
-    NanoPriceResponse,
+use frost_sig::{
+    client::SignInput,
+    nano::{
+        rpc::{AccountBalance, AccountInfo, RPCState},
+        sign::{Subtype, UnsignedBlock},
+    },
 };
+use routes::{get_nano_price_euro, NanoPriceEuro, NanoPriceResponse};
 
-use crate::AppState;
+use crate::{AppState, PORT};
 
 const MAIN_CSS: Asset = asset!("/assets/styling/main.css");
 
 #[component]
 pub fn Dashboard() -> Element {
     let mut menu_item = use_signal(|| "account_details".to_string());
-
-    let mut app_state = use_context::<Signal<AppState>>();
 
     rsx! {
         document::Link { rel: "stylesheet", href: MAIN_CSS }
@@ -42,7 +46,7 @@ pub fn Dashboard() -> Element {
                         div { style: "display: inline-block; margin-bottom: 14px;" }
                         Participants{}
                         div { style: "display: inline-block; margin-bottom: 14px;" }
-                        AccountInfo{}
+                        AccountInfoSection {  }
                     }
                 },
                 "transaction" => {
@@ -65,12 +69,22 @@ pub fn Dashboard() -> Element {
 
 #[component]
 fn Balance() -> Element {
-    let account = "nano_19kqrk7taqnprmy1hcchpkdcpfqnpm7knwdhn9qafhd7b94s99ofngf5ent1";
+    let app_state = use_context::<Signal<AppState>>();
 
-    let balance_future = use_resource(|| async { get_account_balance(account).await });
-    let balance_info: AccountBalanceResponse = match &*balance_future.read_unchecked() {
-        Some(res) => (*res).clone(),
-        None => AccountBalanceResponse::new(),
+    let account = app_state.read().nano_account.clone();
+
+    let balance_future = use_resource(move || {
+        let account = account.clone();
+        dotenv::dotenv().ok();
+        let state = RPCState::new(&std::env::var("URL").unwrap());
+        async move { AccountBalance::get_from_rpc(&state, &account).await }
+    });
+    let balance_info: AccountBalance = match &*balance_future.read_unchecked() {
+        Some(res) => match res {
+            Ok(b) => (*b).clone(),
+            Err(_) => AccountBalance::default(),
+        },
+        None => AccountBalance::default(),
     };
 
     let nano_price_future = use_resource(|| async { get_nano_price_euro().await });
@@ -81,19 +95,14 @@ fn Balance() -> Element {
         },
     };
 
-    let balance_nano = match balance_info.balance_nano {
-        Some(nano) => match nano.parse::<f32>() {
-            Ok(nano) => nano,
-            Err(_) => 0.,
-        },
-        None => 0.,
+    let balance_nano = match balance_info.balance_nano.parse::<f32>() {
+        Ok(b) => b,
+        Err(_) => 0.,
     };
-
-    let pending_nano = match balance_info.pending_nano {
-        Some(nano) => nano,
-        None => String::from("0.0"),
+    let pending_nano = match balance_info.pending_nano.parse::<f32>() {
+        Ok(b) => b,
+        Err(_) => 0.,
     };
-
     let nano_price = match nano_price.nano {
         Some(nano) => match nano.eur {
             Some(price) => price,
@@ -136,7 +145,7 @@ fn Balance() -> Element {
                     div {
                         id: "fill-card",
                         span { style: "display: inline-block; padding-right: 10px; align-items: center;", "XNO" }
-                        strong { id: "sub-heading" , {pending_nano} }
+                        strong { id: "sub-heading" , {pending_nano.to_string()} }
                     }
                 }
             }
@@ -146,15 +155,20 @@ fn Balance() -> Element {
 
 #[component]
 fn Header() -> Element {
+    let app_state = use_context::<Signal<AppState>>();
     rsx! {
         div {
             id: "header",
             div {
                 style: "display: flex; flex-direction: column;",
-                a { id:"h2", style: "font-weight: bold; text-overflow: ellipsis;
-                  max-width: 400px; white-space: nowrap;
-                    overflow: hidden;", "nano_1smubapuampnxtq14taxt8c9rc5f97hj7e8kqer4u6p94cre5g6qq3yxa4f3" }
-                div { id:"secondary", a { "3 Participants" } }
+                a {
+                    class: "nano-account",
+                    { app_state.read().nano_account.clone() }
+                }
+                div { id:"secondary", a { {
+                    let frost_state = app_state.read().frost_state.clone();
+                    format!("{} Participants", frost_state.participants)
+                } } }
             }
         }
     }
@@ -165,6 +179,82 @@ fn StartTransaction() -> Element {
     let mut transaction_type = use_signal(|| "SEND".to_string());
     let mut receivers_account = use_signal(|| "".to_string());
     let mut amount = use_signal(|| "0".to_string());
+
+    let mut is_completed = use_signal_sync(|| false);
+
+    let app_state = use_context::<Signal<AppState>>();
+
+    let open_socket_and_connect = move |_| {
+        dotenv::dotenv().ok();
+
+        use_future(move || async move {
+            let state = RPCState::new(&std::env::var("URL").unwrap());
+            let account = app_state.read().nano_account.clone();
+            let path = app_state.read().account_path.clone();
+            let unsigned_block = match transaction_type.read().as_str() {
+                "OPEN" => UnsignedBlock::create_open(&state, &account).await.unwrap(),
+                "RECEIVE" => UnsignedBlock::create_receive(&state, &account)
+                    .await
+                    .unwrap(),
+                _ => UnsignedBlock::create_send(
+                    &state,
+                    &account,
+                    &receivers_account.read(),
+                    &amount.read().parse::<f64>().unwrap_or(0.),
+                )
+                .await
+                .unwrap(),
+            };
+            let mut sign_input = SignInput::from_file(&path).await.unwrap();
+            sign_input.subtype = match transaction_type.read().as_str() {
+                "RECEIVE" => Subtype::RECEIVE,
+                "OPEN" => Subtype::OPEN,
+                _ => Subtype::SEND,
+            };
+            sign_input.message = unsigned_block;
+            sign_input.to_file(&path).await.unwrap();
+
+            let state = app_state.read().frost_state.clone();
+            let path = app_state.read().account_path.clone();
+            let server = tokio::spawn(async move {
+                match frost_sig::server::sign_server::run(
+                    "localhost",
+                    PORT,
+                    state.participants,
+                    state.threshold,
+                )
+                .await
+                {
+                    Ok(_) => {
+                        println!("Created the server like wonders!")
+                    }
+                    Err(e) => {
+                        eprintln!("Server error: {}", e);
+                    }
+                };
+            });
+
+            let client = tokio::spawn(async move {
+                tokio::time::sleep(Duration::from_secs(2)).await;
+                match frost_sig::client::sign_client::run("localhost", PORT, &path).await {
+                    Ok(_) => {
+                        println!("Created the server like wonders!")
+                    }
+                    Err(e) => {
+                        eprintln!("Server error: {}", e);
+                    }
+                };
+            });
+
+            tokio::spawn(async move {
+                let _ = tokio::join!(server, client);
+                is_completed.set(true);
+            });
+
+            println!("Server and Clients listening.");
+        });
+    };
+
     rsx! {
         div {
             id: "card",
@@ -212,13 +302,26 @@ fn StartTransaction() -> Element {
                 }
             }
             div { style: "display: inline-block; margin-bottom: 36px;" }
+            {
+                match *is_completed.read() {
+                    true => {
+                        rsx! {
+                            span { id: "secondary", "Transaction was successful." }
+                            div { style: "display: inline-block; margin-bottom: 36px;" }
+                        }
+                    }
+                    _ => {
+                        rsx!{}
+                    }
+                }
+            }
             div {
                 id: "column-section",
                 button {
                     id: "button",
+                    onclick: open_socket_and_connect,
                     "Start",
                     // value: "{input_text}",
-                    // oninput: move |event| input_text.set(event.value())
                 }
             }
         }
@@ -229,7 +332,69 @@ fn StartTransaction() -> Element {
 fn JoinTransaction() -> Element {
     let mut transaction_type = use_signal(|| "SEND".to_string());
     let mut ip_address = use_signal(|| "127.0.0.1".to_string());
+    let mut receivers_account = use_signal(|| "".to_string());
     let mut amount = use_signal(|| "0".to_string());
+
+    let app_state = use_context::<Signal<AppState>>();
+
+    let write_block_to_file = move |_| {
+        dotenv::dotenv().ok();
+
+        use_future(move || async move {
+            let state = RPCState::new(&std::env::var("URL").unwrap());
+            let account = app_state.read().nano_account.clone();
+            let path = app_state.read().account_path.clone();
+            let unsigned_block = match transaction_type.read().as_str() {
+                "OPEN" => UnsignedBlock::create_open(&state, &account).await.unwrap(),
+                "RECEIVE" => UnsignedBlock::create_receive(&state, &account)
+                    .await
+                    .unwrap(),
+                _ => UnsignedBlock::create_send(
+                    &state,
+                    &account,
+                    &receivers_account.read(),
+                    &amount.read().parse::<f64>().unwrap_or(0.),
+                )
+                .await
+                .unwrap(),
+            };
+            let mut sign_input = SignInput::from_file(&path).await.unwrap();
+            sign_input.subtype = match transaction_type.read().as_str() {
+                "RECEIVE" => Subtype::RECEIVE,
+                "OPEN" => Subtype::OPEN,
+                _ => Subtype::SEND,
+            };
+            sign_input.message = unsigned_block;
+            sign_input.to_file(&path).await.unwrap();
+        });
+    };
+
+    let connect_to_socket = move |_| {
+        write_block_to_file(());
+
+        let path = app_state.read().account_path.clone();
+        let ip_address = ip_address.read().clone();
+
+        let client = tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_secs(2)).await;
+            match frost_sig::client::sign_client::run(&ip_address, PORT, &path).await {
+                Ok(_) => {
+                    println!("Created the server like wonders!")
+                }
+                Err(e) => {
+                    eprintln!("Server error: {}", e);
+                }
+            };
+        });
+
+        tokio::spawn(async move {
+            let _ = tokio::join!(client);
+            //is_completed.set(true);
+        });
+
+        println!("Client listening.");
+    };
+
     rsx! {
         div {
             id: "card",
@@ -269,6 +434,15 @@ fn JoinTransaction() -> Element {
 
                             }
                         }
+                        div { style: "display: inline-block; margin-bottom: 14px;" }
+                        div {
+                            id: "column-section",
+                            span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Receiver's Account:" }
+                            input {
+                                id: "input",
+                                onchange: move |event| receivers_account.set(event.value()),
+                            }
+                        }
                     }
                 }
                 _ => {
@@ -280,9 +454,9 @@ fn JoinTransaction() -> Element {
                 id: "column-section",
                 button {
                     id: "secondary-button",
+                    onclick: connect_to_socket,
                     "Join",
                     // value: "{input_text}",
-                    // oninput: move |event| input_text.set(event.value())
                 }
             }
         }
@@ -393,42 +567,24 @@ fn Transactions() -> Element {
 
 #[component]
 fn Participants() -> Element {
+    let app_state = use_context::<Signal<AppState>>();
+    let public_share = app_state.read().public_share.clone();
     rsx! {
         div {
             id: "card",
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "PARTICIPANTS" }
+            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "PUBLIC KEY SHARE" }
             div {
                 id: "column-section",
                 div {
-                    id: "transaction",
+                    style: "display: flex; align-items: center; gap: 12px;",
+                    PersonIconYellow {}
                     div {
-                        style: "display: flex; align-items: center; gap: 12px;",
-                        PersonIconYellow{}
+                        style: "flex: 1;",
                         div {
-                            style: "flex: 1;",
-                            div {
-                                id: "fill-card",
-                                span { id: "sub-heading" , style: "text-overflow: ellipsis;
-                                  max-width: 340px; white-space: nowrap;
-                                    overflow: hidden;", strong { "E3C52113AABA834B59B7BF4C27CBF5DBDDF0E23D5157AFBA93BC845D1B3C3487" } }
-                            }
-                        }
-                    }
-                }
-                div { style: "display: inline-block; margin-bottom: 14px;" }
-                div {
-                    id: "transaction",
-                    div {
-                        style: "display: flex; align-items: center; gap: 12px;",
-                        PersonIconBlue{}
-                        div {
-                            style: "flex: 1;",
-                            div {
-                                id: "fill-card",
-                                span { id: "sub-heading" , style: "text-overflow: ellipsis;
-                                  max-width: 340px; white-space: nowrap;
-                                    overflow: hidden;", strong { "E3C52113AABA834B59B7BF4C27CBF5DBDDF0E23D5157AFBA93BC845D1B3C3487" } }
-                            }
+                            id: "fill-card",
+                            span { id: "sub-heading" , style: "text-overflow: ellipsis;
+                              max-width: 340px; white-space: nowrap;
+                                overflow: hidden;", strong { {format!("{}", public_share.to_uppercase())} } }
                         }
                     }
                 }
@@ -438,57 +594,79 @@ fn Participants() -> Element {
 }
 
 #[component]
-fn AccountInfo() -> Element {
-    rsx! {
-        div {
-            id: "card",
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "FRONTIER" }
-            div {
+fn AccountInfoSection() -> Element {
+    let app_state = use_context::<Signal<AppState>>();
+    let account = app_state.read().nano_account.clone();
+
+    let account_info_future = use_resource(move || {
+        let account = account.clone();
+        async move {
+            dotenv::dotenv().ok();
+            let state = RPCState::new(&std::env::var("URL").unwrap());
+            AccountInfo::get_from_rpc(&state, &account).await
+        }
+    });
+
+    match &*account_info_future.read_unchecked() {
+        Some(Ok(account_info)) => {
+            rsx! {
                 div {
-                    id: "fill-card",
-                    span { id: "sub-heading" , style: "text-overflow: ellipsis;
-                      max-width: 390px; white-space: nowrap;
-                        overflow: hidden;", span { "E3C52113AABA834B59B7BF4C27CBF5DBDDF0E23D5157AFBA93BC845D1B3C3487" } }
+                    id: "card",
+                    span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "FRONTIER" }
+                    div {
+                        div {
+                            id: "fill-card",
+                            span { id: "sub-heading" , style: "text-overflow: ellipsis;
+                              max-width: 390px; white-space: nowrap;
+                                overflow: hidden;", span { {account_info.frontier.clone()} } }
+                        }
+                    }
+                    div { style: "display: inline-block; margin-bottom: 28px;" }
+                    span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "OPEN BLOCK" }
+                    div {
+                        div {
+                            id: "fill-card",
+                            span { id: "sub-heading" , style: "text-overflow: ellipsis;
+                              max-width: 390px; white-space: nowrap;
+                                overflow: hidden;", span { {account_info.open_block.clone()} } }
+                        }
+                    }
+                    div { style: "display: inline-block; margin-bottom: 28px;" }
+                    span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "REPRESENTATIVE" }
+                    div {
+                        div {
+                            id: "fill-card",
+                            span { id: "sub-heading" , style: "text-overflow: ellipsis;
+                              max-width: 390px; white-space: nowrap;
+                                overflow: hidden;", span { {account_info.representative_block.clone()} } }
+                        }
+                    }
+                    div { style: "display: inline-block; margin-bottom: 28px;" }
+                    span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "BALANCE" }
+                    div {
+                        div {
+                            id: "fill-card",
+                            span { id: "sub-heading" , style: "text-overflow: ellipsis;
+                              max-width: 390px; white-space: nowrap;
+                                overflow: hidden;", span { {account_info.balance.clone()} } }
+                        }
+                    }
                 }
             }
-            div { style: "display: inline-block; margin-bottom: 28px;" }
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "OPEN BLOCK" }
-            div {
+        }
+        Some(Err(_)) => {
+            rsx! {
                 div {
-                    id: "fill-card",
-                    span { id: "sub-heading" , style: "text-overflow: ellipsis;
-                      max-width: 390px; white-space: nowrap;
-                        overflow: hidden;", span { "E3C52113AABA834B59B7BF4C27CBF5DBDDF0E23D5157AFBA93BC845D1B3C3487" } }
+                    id: "card",
+                    span { id: "secondary", "Open your account with a transaction to see more details." }
                 }
             }
-            div { style: "display: inline-block; margin-bottom: 28px;" }
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "REPRESENTATIVE" }
-            div {
+        }
+        None => {
+            rsx! {
                 div {
-                    id: "fill-card",
-                    span { id: "sub-heading" , style: "text-overflow: ellipsis;
-                      max-width: 390px; white-space: nowrap;
-                        overflow: hidden;", span { "nano_1zuksmn4e8tjw1ch8m8fbrwy5459bx8645o9euj699rs13qy6ysjhrewioey" } }
-                }
-            }
-            div { style: "display: inline-block; margin-bottom: 28px;" }
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "BALANCE" }
-            div {
-                div {
-                    id: "fill-card",
-                    span { id: "sub-heading" , style: "text-overflow: ellipsis;
-                      max-width: 390px; white-space: nowrap;
-                        overflow: hidden;", span { "16756113036167018697960000000000" } }
-                }
-            }
-            div { style: "display: inline-block; margin-bottom: 28px;" }
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "BLOCK COUNT" }
-            div {
-                div {
-                    id: "fill-card",
-                    span { id: "sub-heading" , style: "text-overflow: ellipsis;
-                      max-width: 390px; white-space: nowrap;
-                        overflow: hidden;", span { "202" } }
+                    id: "card",
+                    span { id: "secondary", "Loading account information..." }
                 }
             }
         }

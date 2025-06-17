@@ -4,16 +4,21 @@ use dioxus::{
 };
 use dioxus_desktop::{tao::platform::macos::WindowBuilderExtMacOS, LogicalSize};
 use dioxus_router::prelude::*;
+use frost_sig::FrostState;
 
 mod dashboard;
 use dashboard::Dashboard;
 
 mod home;
-use frost_sig::client::SignInput;
 use home::Home;
+
+mod alert;
+use alert::Alert;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const MAIN_CSS: Asset = asset!("/assets/main.css");
+
+pub const PORT: u32 = 6705;
 
 #[derive(Clone, Routable, Debug, PartialEq)]
 pub enum Route {
@@ -21,19 +26,25 @@ pub enum Route {
     Home {},
     #[route("/dashboard")]
     Dashboard {},
+    #[route("/alert")]
+    Alert {},
 }
 
 #[derive(Clone, Debug)]
 pub struct AppState {
     pub account_path: String,
-    pub sign_input: Option<SignInput>,
+    pub nano_account: String,
+    pub public_share: String,
+    pub frost_state: FrostState,
 }
 
 impl Default for AppState {
     fn default() -> Self {
         Self {
             account_path: "".to_string(),
-            sign_input: None,
+            nano_account: "".to_string(),
+            frost_state: FrostState::new(0, 0),
+            public_share: "".to_string(),
         }
     }
 }

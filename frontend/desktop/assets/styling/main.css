@@ -135,3 +135,19 @@ body {
 #menu-button:active {
     opacity: 0.8;
 }
+
+.nano-account {
+    font-size: 24px;
+    font-weight: bold;
+    text-overflow: ellipsis;
+    max-width: 400px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.nano-account:hover {
+    white-space: normal;
+    max-width: 400px;
+    word-break: break-all;
+    overflow: visible;
+}

@@ -7,11 +7,10 @@ use std::{
 use dioxus::prelude::*;
 use dioxus_material_icons::MaterialIconStylesheet;
 use dioxus_router::hooks::use_navigator;
-use frost_sig::client::SignInput;
+use frost_sig::{client::SignInput, nano::account::public_key_to_nano_account};
 
-use crate::{AppState, Route};
+use crate::{AppState, Route, PORT};
 
-const PORT: u32 = 6705;
 const MAIN_CSS: Asset = asset!("/assets/styling/main.css");
 
 #[component]
@@ -45,20 +44,25 @@ fn CreateAccountSession() -> Element {
         if is_completed() {
             app_state.write().account_path = path.read().to_string();
 
-            let sign_input: Option<SignInput> = {
+            let sign_input: SignInput = {
                 match File::open(path.read().to_string()) {
                     Ok(file) => {
                         let mut buf_reader = BufReader::new(file);
                         let mut contents = String::new();
                         buf_reader.read_to_string(&mut contents).unwrap();
 
-                        Some(serde_json::from_str::<SignInput>(&contents).unwrap())
+                        serde_json::from_str::<SignInput>(&contents).unwrap()
                     }
-                    Err(_) => None,
+                    Err(_) => {
+                        nav.push(Route::Alert {});
+                        SignInput::default()
+                    }
                 }
             };
 
-            app_state.write().sign_input = sign_input;
+            app_state.write().nano_account =
+                public_key_to_nano_account(&sign_input.public_aggregated_key.to_bytes());
+            app_state.write().frost_state = sign_input.state;
 
             nav.push(Route::Dashboard {});
         }
@@ -227,21 +231,26 @@ fn OpenAccount() -> Element {
     let open_dashboard_with_account = move |_| {
         app_state.write().account_path = path.read().to_string();
 
-        let sign_input: Option<SignInput> = {
+        let sign_input: SignInput = {
             match File::open(path.read().to_string()) {
                 Ok(file) => {
                     let mut buf_reader = BufReader::new(file);
                     let mut contents = String::new();
                     buf_reader.read_to_string(&mut contents).unwrap();
 
-                    Some(serde_json::from_str::<SignInput>(&contents).unwrap())
+                    serde_json::from_str::<SignInput>(&contents).unwrap()
                 }
-                Err(_) => None,
+                Err(_) => {
+                    nav.push(Route::Alert {});
+                    SignInput::default()
+                }
             }
         };
 
-        app_state.write().sign_input = sign_input;
-
+        app_state.write().nano_account =
+            public_key_to_nano_account(&sign_input.public_aggregated_key.to_bytes());
+        app_state.write().frost_state = sign_input.state;
+        app_state.write().public_share = hex::encode(sign_input.own_public_share.as_bytes());
         nav.push(Route::Dashboard {});
     };
 
