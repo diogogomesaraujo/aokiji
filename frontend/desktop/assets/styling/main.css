@@ -107,6 +107,10 @@ body {
     opacity: 0.8;
 }
 
+#button:disabled {
+    opacity: 0.8;
+}
+
 #secondary-button {
     background-color: #b7d0fe;
     color: #0f161d;
@@ -119,6 +123,10 @@ body {
 }
 
 #secondary-button:active {
+    opacity: 0.8;
+}
+
+#secondary-button:disabled {
     opacity: 0.8;
 }
 

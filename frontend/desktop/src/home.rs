@@ -1,6 +1,7 @@
 use std::{
     fs::File,
     io::{BufReader, Read},
+    thread::sleep,
     time::Duration,
 };
 
@@ -12,6 +13,14 @@ use frost_sig::{client::SignInput, nano::account::public_key_to_nano_account};
 use crate::{AppState, Route, PORT};
 
 const MAIN_CSS: Asset = asset!("/assets/styling/main.css");
+
+#[derive(Clone)]
+enum TransactionState {
+    Idle,
+    Processing,
+    Successful,
+    Error(String),
+}
 
 #[component]
 pub fn Home() -> Element {
@@ -35,6 +44,7 @@ fn CreateAccountSession() -> Element {
     let mut operation_type = use_signal(|| "OPEN".to_string());
     let mut ip_address = use_signal(|| "localhost".to_string());
     let mut is_completed = use_signal_sync(|| false);
+    let mut is_processing = use_signal_sync(|| false);
 
     let mut app_state = use_context::<Signal<AppState>>();
 
@@ -74,6 +84,7 @@ fn CreateAccountSession() -> Element {
         let path = path.read().clone();
 
         let server = tokio::spawn(async move {
+            is_processing.set(true);
             match frost_sig::server::keygen_server::run("localhost", PORT, participants, threshold)
                 .await
             {
@@ -124,6 +135,7 @@ fn CreateAccountSession() -> Element {
         tokio::spawn(async move {
             let _ = tokio::join!(client);
             is_completed.set(true);
+            is_processing.set(false);
         });
 
         println!("Client listening.");
@@ -211,6 +223,7 @@ fn CreateAccountSession() -> Element {
                             id: "column-section",
                             button {
                                 id: "button",
+                                disabled: is_processing(),
                                 onclick: open_and_connect_to_socket,
                                 "Create",
                             }
@@ -224,6 +237,7 @@ fn CreateAccountSession() -> Element {
 #[component]
 fn OpenAccount() -> Element {
     let mut path = use_signal(|| "".to_string());
+    let mut is_processing = use_signal(|| TransactionState::Idle);
 
     let mut app_state = use_context::<Signal<AppState>>();
     let nav = use_navigator();
@@ -231,18 +245,37 @@ fn OpenAccount() -> Element {
     let open_dashboard_with_account = move |_| {
         app_state.write().account_path = path.read().to_string();
 
+        is_processing.set(TransactionState::Processing);
+
         let sign_input: SignInput = {
             match File::open(path.read().to_string()) {
                 Ok(file) => {
                     let mut buf_reader = BufReader::new(file);
                     let mut contents = String::new();
-                    buf_reader.read_to_string(&mut contents).unwrap();
+                    match buf_reader.read_to_string(&mut contents) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            is_processing.set(TransactionState::Error(e.to_string()));
+                            return;
+                        }
+                    };
+                    is_processing.set(TransactionState::Successful);
 
-                    serde_json::from_str::<SignInput>(&contents).unwrap()
+                    match serde_json::from_str::<SignInput>(&contents) {
+                        Ok(input) => input,
+                        Err(_) => {
+                            is_processing.set(TransactionState::Error(
+                                "File has invalid format.".to_string(),
+                            ));
+                            return;
+                        }
+                    }
                 }
                 Err(_) => {
-                    nav.push(Route::Alert {});
-                    SignInput::default()
+                    is_processing.set(TransactionState::Error(
+                        "Couldn't open the file.".to_string(),
+                    ));
+                    return;
                 }
             }
         };
@@ -258,33 +291,65 @@ fn OpenAccount() -> Element {
         div {
             id: "card",
             span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "OPEN ACCOUNT" }
-                div {
-                    id: "column-section",
-                    span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Select the File:" }
-                    input {
-                        id: "input",
-                        r#type: "file",
-                        onchange: move |event| {
-                            match &event.files() {
-                                Some(file_engine) => {
-                                    let files = file_engine.files();
-                                    match files.get(0) {
-                                        Some(file) => {
-                                            path.set(file.clone());
-                                        },
-                                        None => {}
-                                    }
-                                },
-                                None => {}
-                            }
-                        },
+            div {
+                id: "column-section",
+                span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Select the File:" }
+                input {
+                    id: "input",
+                    r#type: "file",
+                    onchange: move |event| {
+                        match &event.files() {
+                            Some(file_engine) => {
+                                let files = file_engine.files();
+                                match files.get(0) {
+                                    Some(file) => {
+                                        path.set(file.clone());
+                                    },
+                                    None => {}
+                                }
+                            },
+                            None => {}
+                        }
+                    },
+                }
+            }
+            {
+                match *is_processing.read() {
+                    TransactionState::Processing => {
+                        rsx! {
+                            div { style: "display: inline-block; margin-bottom: 14px;" }
+                            span { id: "secondary", "Opening the account..." }
+                        }
+                    }
+                    TransactionState::Successful => {
+                        rsx! {
+                            div { style: "display: inline-block; margin-bottom: 14px;" }
+                            span { id: "secondary", "Successfully opened the account." }
+                        }
+                    }
+                    TransactionState::Error(ref e) => {
+                        rsx! {
+                            div { style: "display: inline-block; margin-bottom: 14px;" }
+                            span { id: "secondary", "{e}" }
+                        }
+                    }
+                    _ => {
+                        rsx!{}
                     }
                 }
+            }
             div { style: "display: inline-block; margin-bottom: 36px;" }
             div {
                 id: "column-section",
                 button {
                     id: "secondary-button",
+                    disabled: match is_processing() {
+                        TransactionState::Idle | TransactionState::Error(_) => match path.read().to_string().as_str() {
+                            "" => true,
+                            _ => false
+                        },
+                        _ => true,
+                    },
                     onclick: open_dashboard_with_account,
                     "Open",
                 }

@@ -6,7 +6,7 @@ use dioxus_material_icons::{MaterialIcon, MaterialIconStylesheet};
 use frost_sig::{
     client::SignInput,
     nano::{
-        rpc::{AccountBalance, AccountInfo, RPCState},
+        rpc::{AccountBalance, AccountHistory, AccountInfo, RPCState},
         sign::{Subtype, UnsignedBlock},
     },
 };
@@ -15,6 +15,14 @@ use routes::{get_nano_price_euro, NanoPriceEuro, NanoPriceResponse};
 use crate::{AppState, PORT};
 
 const MAIN_CSS: Asset = asset!("/assets/styling/main.css");
+
+#[derive(Clone)]
+enum TransactionState {
+    Idle,
+    Processing,
+    Successful,
+    Error(String),
+}
 
 #[component]
 pub fn Dashboard() -> Element {
@@ -99,7 +107,7 @@ fn Balance() -> Element {
         Ok(b) => b,
         Err(_) => 0.,
     };
-    let pending_nano = match balance_info.pending_nano.parse::<f32>() {
+    let receivable_nano = match balance_info.receivable_nano.parse::<f32>() {
         Ok(b) => b,
         Err(_) => 0.,
     };
@@ -137,7 +145,7 @@ fn Balance() -> Element {
                     style: "display: inline-block; margin-bottom: 14px;",
                     div {
                         id: "fill-card",
-                        span { id: "secondary", "PENDING" }
+                        span { id: "secondary", "RECEIVABLE" }
                     }
                 }
                 div {
@@ -145,7 +153,7 @@ fn Balance() -> Element {
                     div {
                         id: "fill-card",
                         span { style: "display: inline-block; padding-right: 10px; align-items: center;", "XNO" }
-                        strong { id: "sub-heading" , {pending_nano.to_string()} }
+                        strong { id: "sub-heading" , {receivable_nano.to_string()} }
                     }
                 }
             }
@@ -180,7 +188,7 @@ fn StartTransaction() -> Element {
     let mut receivers_account = use_signal(|| "".to_string());
     let mut amount = use_signal(|| "0".to_string());
 
-    let mut is_completed = use_signal_sync(|| false);
+    let mut transaction_state = use_signal_sync(|| TransactionState::Idle);
 
     let app_state = use_context::<Signal<AppState>>();
 
@@ -192,10 +200,12 @@ fn StartTransaction() -> Element {
             let account = app_state.read().nano_account.clone();
             let path = app_state.read().account_path.clone();
             let unsigned_block = match transaction_type.read().as_str() {
-                "OPEN" => UnsignedBlock::create_open(&state, &account).await.unwrap(),
+                "OPEN" => UnsignedBlock::create_open(&state, &account)
+                    .await
+                    .unwrap_or(UnsignedBlock::empty()),
                 "RECEIVE" => UnsignedBlock::create_receive(&state, &account)
                     .await
-                    .unwrap(),
+                    .unwrap_or(UnsignedBlock::empty()),
                 _ => UnsignedBlock::create_send(
                     &state,
                     &account,
@@ -203,16 +213,30 @@ fn StartTransaction() -> Element {
                     &amount.read().parse::<f64>().unwrap_or(0.),
                 )
                 .await
-                .unwrap(),
+                .unwrap_or(UnsignedBlock::empty()),
             };
-            let mut sign_input = SignInput::from_file(&path).await.unwrap();
+            let mut sign_input = match SignInput::from_file(&path).await {
+                Ok(input) => input,
+                Err(e) => {
+                    transaction_state.set(TransactionState::Error(e.to_string()));
+                    return;
+                }
+            };
             sign_input.subtype = match transaction_type.read().as_str() {
                 "RECEIVE" => Subtype::RECEIVE,
                 "OPEN" => Subtype::OPEN,
                 _ => Subtype::SEND,
             };
             sign_input.message = unsigned_block;
-            sign_input.to_file(&path).await.unwrap();
+            match sign_input.to_file(&path).await {
+                Ok(_) => {}
+                Err(e) => {
+                    transaction_state.set(TransactionState::Error(e.to_string()));
+                    return;
+                }
+            };
+
+            transaction_state.set(TransactionState::Processing);
 
             let state = app_state.read().frost_state.clone();
             let path = app_state.read().account_path.clone();
@@ -225,11 +249,10 @@ fn StartTransaction() -> Element {
                 )
                 .await
                 {
-                    Ok(_) => {
-                        println!("Created the server like wonders!")
-                    }
+                    Ok(_) => {}
                     Err(e) => {
-                        eprintln!("Server error: {}", e);
+                        transaction_state.set(TransactionState::Error(e.to_string()));
+                        return;
                     }
                 };
             });
@@ -237,18 +260,17 @@ fn StartTransaction() -> Element {
             let client = tokio::spawn(async move {
                 tokio::time::sleep(Duration::from_secs(2)).await;
                 match frost_sig::client::sign_client::run("localhost", PORT, &path).await {
-                    Ok(_) => {
-                        println!("Created the server like wonders!")
-                    }
+                    Ok(_) => {}
                     Err(e) => {
-                        eprintln!("Server error: {}", e);
+                        transaction_state.set(TransactionState::Error(e.to_string()));
+                        return;
                     }
                 };
             });
 
             tokio::spawn(async move {
                 let _ = tokio::join!(server, client);
-                is_completed.set(true);
+                transaction_state.set(TransactionState::Successful);
             });
 
             println!("Server and Clients listening.");
@@ -301,13 +323,24 @@ fn StartTransaction() -> Element {
                     }
                 }
             }
-            div { style: "display: inline-block; margin-bottom: 36px;" }
             {
-                match *is_completed.read() {
-                    true => {
+                match *transaction_state.read() {
+                    TransactionState::Processing => {
                         rsx! {
-                            span { id: "secondary", "Transaction was successful." }
-                            div { style: "display: inline-block; margin-bottom: 36px;" }
+                            div { style: "display: inline-block; margin-bottom: 14px;" }
+                            span { id: "secondary", "Processing the transaction..." }
+                        }
+                    }
+                    TransactionState::Successful => {
+                        rsx! {
+                            div { style: "display: inline-block; margin-bottom: 14px;" }
+                            span { id: "secondary", "Transaction was successfull." }
+                        }
+                    }
+                    TransactionState::Error(ref e) => {
+                        rsx! {
+                            div { style: "display: inline-block; margin-bottom: 14px;" }
+                            span { id: "secondary", "{e}" }
                         }
                     }
                     _ => {
@@ -315,10 +348,15 @@ fn StartTransaction() -> Element {
                     }
                 }
             }
+            div { style: "display: inline-block; margin-bottom: 36px;" }
             div {
                 id: "column-section",
                 button {
                     id: "button",
+                    disabled: match *transaction_state.read() {
+                        TransactionState::Idle => false,
+                        _ => true,
+                    },
                     onclick: open_socket_and_connect,
                     "Start",
                     // value: "{input_text}",
@@ -335,6 +373,8 @@ fn JoinTransaction() -> Element {
     let mut receivers_account = use_signal(|| "".to_string());
     let mut amount = use_signal(|| "0".to_string());
 
+    let mut transaction_state = use_signal_sync(|| TransactionState::Idle);
+
     let app_state = use_context::<Signal<AppState>>();
 
     let write_block_to_file = move |_| {
@@ -345,10 +385,12 @@ fn JoinTransaction() -> Element {
             let account = app_state.read().nano_account.clone();
             let path = app_state.read().account_path.clone();
             let unsigned_block = match transaction_type.read().as_str() {
-                "OPEN" => UnsignedBlock::create_open(&state, &account).await.unwrap(),
+                "OPEN" => UnsignedBlock::create_open(&state, &account)
+                    .await
+                    .unwrap_or(UnsignedBlock::empty()),
                 "RECEIVE" => UnsignedBlock::create_receive(&state, &account)
                     .await
-                    .unwrap(),
+                    .unwrap_or(UnsignedBlock::empty()),
                 _ => UnsignedBlock::create_send(
                     &state,
                     &account,
@@ -356,7 +398,7 @@ fn JoinTransaction() -> Element {
                     &amount.read().parse::<f64>().unwrap_or(0.),
                 )
                 .await
-                .unwrap(),
+                .unwrap_or(UnsignedBlock::empty()),
             };
             let mut sign_input = SignInput::from_file(&path).await.unwrap();
             sign_input.subtype = match transaction_type.read().as_str() {
@@ -505,60 +547,64 @@ fn PersonIconYellow() -> Element {
 
 #[component]
 fn Transactions() -> Element {
+    let transactions = use_resource(async move || {
+        dotenv::dotenv().ok();
+
+        let app_state = use_context::<Signal<AppState>>();
+        let state = RPCState::new(&std::env::var("URL").unwrap());
+        let nano_account = app_state.read().nano_account.clone();
+
+        match AccountHistory::get_from_rpc(&state, &nano_account, 20u32).await {
+            Ok(account_history) => account_history.history,
+            Err(_) => Vec::new(),
+        }
+    });
+
     rsx! {
         div {
             id: "card",
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "TRANSACTION HISTORY" }
             div {
                 id: "column-section",
-                div {
-                    id: "transaction",
-                    div {
-                        style: "display: flex; align-items: center; gap: 12px;",
-                        SendIcon{}
-                        div {
-                            style: "flex: 1;",
-                            div {
-                                id: "fill-card",
-                                span { id: "sub-heading" , style: "text-overflow: ellipsis;
-                                  max-width: 200px; white-space: nowrap;
-                                    overflow: hidden;", strong { "nano_1smubapuampnxtq14taxt8c9rc5f97hj7e8kqer4u6p94cre5g6qq3yxa4f3" } }
-                                span { id: "secondary" , "XNO" }
-                            }
-                            div {
-                                id: "fill-card",
-                                span { id: "secondary" , style: "text-overflow: ellipsis;
-                                  max-width: 200px; white-space: nowrap;
-                                    overflow: hidden;", strong { "E3C52113AABA834B59B7BF4C27CBF5DBDDF0E23D5157AFBA93BC845D1B3C3487" } }
-                                strong { id: "sub-heading" , "2.21353" }
-                            }
-                        }
-                    }
-                }
-                div { style: "display: inline-block; margin-bottom: 14px;" }
-                div {
-                    id: "transaction",
-                    div {
-                        style: "display: flex; align-items: center; gap: 12px;",
-                        ReceiveIcon{}
-                        div {
-                            style: "flex: 1;",
-                            div {
-                                id: "fill-card",
-                                span { id: "sub-heading" , style: "text-overflow: ellipsis;
-                                  max-width: 200px; white-space: nowrap;
-                                    overflow: hidden;", strong { "nano_1smubapuampnxtq14taxt8c9rc5f97hj7e8kqer4u6p94cre5g6qq3yxa4f3" } }
-                                span { id: "secondary" , "XNO" }
-                            }
-                            div {
-                                id: "fill-card",
-                                span { id: "secondary" , style: "text-overflow: ellipsis;
-                                  max-width: 200px; white-space: nowrap;
-                                    overflow: hidden;", strong { "E3C52113AABA834B59B7BF4C27CBF5DBDDF0E23D5157AFBA93BC845D1B3C3487" } }
-                                strong { id: "sub-heading" , "2.21353" }
+                match &*transactions.read_unchecked() {
+                    Some(transaction_list) => {
+                        rsx! {
+                            span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "TRANSACTION HISTORY" }
+                            for (i, transaction) in transaction_list.iter().enumerate() {
+                                div {
+                                    id: "transaction",
+                                    div {
+                                        style: "display: flex; align-items: center; gap: 12px;",
+                                        if transaction.r#type.as_str() == "send" {
+                                            SendIcon{}
+                                        } else {
+                                            ReceiveIcon{}
+                                        }
+                                        div {
+                                            style: "flex: 1;",
+                                            div {
+                                                id: "fill-card",
+                                                span { id: "sub-heading" , style: "text-overflow: ellipsis;
+                                                  max-width: 200px; white-space: nowrap;
+                                                    overflow: hidden;", strong { {format!("{}", transaction.account)} } }
+                                                span { id: "secondary" , "XNO" }
+                                            }
+                                            div {
+                                                id: "fill-card",
+                                                span { id: "secondary" , style: "text-overflow: ellipsis;
+                                                  max-width: 200px; white-space: nowrap;
+                                                    overflow: hidden;", strong {  {format!("{}", transaction.hash)} } }
+                                                strong { id: "sub-heading" , {format!("{:?}", transaction.amount.parse::<u64>().unwrap_or(0u64) as f64 / 10.)} }
+                                            }
+                                        }
+                                    }
+                                }
+                                if i != transaction_list.len() - 1 {
+                                    div { style: "display: inline-block; margin-bottom: 14px;" }
+                                }
                             }
                         }
                     }
+                    None => rsx! { span { id: "secondary", "Loading transactions..." } }
                 }
             }
         }
@@ -572,7 +618,7 @@ fn Participants() -> Element {
     rsx! {
         div {
             id: "card",
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "PUBLIC KEY SHARE" }
+            span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "PUBLIC KEY SHARE" }
             div {
                 id: "column-section",
                 div {
@@ -638,7 +684,7 @@ fn AccountInfoSection() -> Element {
                             id: "fill-card",
                             span { id: "sub-heading" , style: "text-overflow: ellipsis;
                               max-width: 390px; white-space: nowrap;
-                                overflow: hidden;", span { {account_info.representative_block.clone()} } }
+                                overflow: hidden;", span { {account_info.representative.clone()} } }
                         }
                     }
                     div { style: "display: inline-block; margin-bottom: 28px;" }
@@ -649,6 +695,16 @@ fn AccountInfoSection() -> Element {
                             span { id: "sub-heading" , style: "text-overflow: ellipsis;
                               max-width: 390px; white-space: nowrap;
                                 overflow: hidden;", span { {account_info.balance.clone()} } }
+                        }
+                    }
+                    div { style: "display: inline-block; margin-bottom: 28px;" }
+                    span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "BLOCK COUNT" }
+                    div {
+                        div {
+                            id: "fill-card",
+                            span { id: "sub-heading" , style: "text-overflow: ellipsis;
+                              max-width: 390px; white-space: nowrap;
+                                overflow: hidden;", span { {account_info.block_count.clone()} } }
                         }
                     }
                 }
@@ -667,49 +723,6 @@ fn AccountInfoSection() -> Element {
                 div {
                     id: "card",
                     span { id: "secondary", "Loading account information..." }
-                }
-            }
-        }
-    }
-}
-
-#[component]
-fn Wallets() -> Element {
-    rsx! {
-        div {
-            id: "card",
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "SHARED WALLETS" }
-            div {
-                id: "column-section",
-                div {
-                    id: "transaction",
-                    div {
-                        div {
-                            id: "fill-card",
-                            span { id: "sub-heading" , strong { "Evil Corp." } }
-                            span { id: "secondary" , "XNO" }
-                        }
-                        div {
-                            id: "fill-card",
-                                span { id: "secondary" , "5 Participants" }
-                            strong { id: "sub-heading" , "13482.543" }
-                        }
-                    }
-                }
-                div { style: "display: inline-block; margin-bottom: 14px;" }
-                div {
-                    id: "transaction",
-                    div {
-                        div {
-                            id: "fill-card",
-                            span { id: "sub-heading" , strong { "Shelby Company Ltd." } }
-                            span { id: "secondary" , "XNO" }
-                        }                        div {
-                            id: "fill-card",
-                                span { id: "secondary" ,  "3 Participants" }
-                            strong { id: "sub-heading" , "2.21353" }
-                        }
-                    }
                 }
             }
         }
