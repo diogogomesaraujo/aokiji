@@ -1812,7 +1812,7 @@ dependencies = [
 [[package]]
 name = "frost-sig"
 version = "0.0.1"
-source = "git+https://github.com/diogogomesaraujo/frost-sig.git#519bc27fca9b9b17366952d8d6838dfe42e936f9"
+source = "git+https://github.com/diogogomesaraujo/frost-sig.git#451453a53bf8a972bb766662eb69876433d1d121"
 dependencies = [
  "blake2 0.10.6",
  "curve25519-dalek",

@@ -1,7 +1,5 @@
-use std::time::Duration;
-
+use crate::{AppState, TransactionState, MAIN_CSS, PORT};
 use dioxus::prelude::*;
-
 use dioxus_material_icons::{MaterialIcon, MaterialIconStylesheet};
 use frost_sig::{
     client::SignInput,
@@ -11,18 +9,7 @@ use frost_sig::{
     },
 };
 use routes::{get_nano_price_euro, NanoPriceEuro, NanoPriceResponse};
-
-use crate::{AppState, PORT};
-
-const MAIN_CSS: Asset = asset!("/assets/styling/main.css");
-
-#[derive(Clone)]
-enum TransactionState {
-    Idle,
-    Processing,
-    Successful,
-    Error(String),
-}
+use std::time::Duration;
 
 #[component]
 pub fn Dashboard() -> Element {
@@ -196,7 +183,15 @@ fn StartTransaction() -> Element {
         dotenv::dotenv().ok();
 
         use_future(move || async move {
-            let state = RPCState::new(&std::env::var("URL").unwrap());
+            let state = RPCState::new(match &std::env::var("URL") {
+                Ok(url) => url,
+                Err(_) => {
+                    transaction_state.set(TransactionState::Error(
+                        "Failed getting the url.".to_string(),
+                    ));
+                    return;
+                }
+            });
             let account = app_state.read().nano_account.clone();
             let path = app_state.read().account_path.clone();
             let unsigned_block = match transaction_type.read().as_str() {
@@ -310,6 +305,7 @@ fn StartTransaction() -> Element {
                             span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Amount (XNO):" }
                             input {
                                 id: "input",
+                                value: "0",
                                 r#type: "number",
                                 min: "0",
                                 onchange: move |event| amount.set(event.value()),
@@ -334,7 +330,7 @@ fn StartTransaction() -> Element {
                     TransactionState::Successful => {
                         rsx! {
                             div { style: "display: inline-block; margin-bottom: 14px;" }
-                            span { id: "secondary", "Transaction was successfull." }
+                            span { id: "secondary", "Transaction was successful." }
                         }
                     }
                     TransactionState::Error(ref e) => {
@@ -354,12 +350,14 @@ fn StartTransaction() -> Element {
                 button {
                     id: "button",
                     disabled: match *transaction_state.read() {
-                        TransactionState::Idle => false,
+                        TransactionState::Idle | TransactionState::Error(_) => match receivers_account.read().to_string().as_str() {
+                            "" => true,
+                            _ => false
+                        },
                         _ => true,
                     },
                     onclick: open_socket_and_connect,
                     "Start",
-                    // value: "{input_text}",
                 }
             }
         }
@@ -377,11 +375,20 @@ fn JoinTransaction() -> Element {
 
     let app_state = use_context::<Signal<AppState>>();
 
-    let write_block_to_file = move |_| {
+    let connect_to_socket = move |_| {
         dotenv::dotenv().ok();
 
         use_future(move || async move {
-            let state = RPCState::new(&std::env::var("URL").unwrap());
+            transaction_state.set(TransactionState::Processing);
+            let state = RPCState::new(match &std::env::var("URL") {
+                Ok(url) => url,
+                Err(_) => {
+                    transaction_state.set(TransactionState::Error(
+                        "Failed getting the url.".to_string(),
+                    ));
+                    return;
+                }
+            });
             let account = app_state.read().nano_account.clone();
             let path = app_state.read().account_path.clone();
             let unsigned_block = match transaction_type.read().as_str() {
@@ -400,19 +407,30 @@ fn JoinTransaction() -> Element {
                 .await
                 .unwrap_or(UnsignedBlock::empty()),
             };
-            let mut sign_input = SignInput::from_file(&path).await.unwrap();
+            let mut sign_input = match SignInput::from_file(&path).await {
+                Ok(input) => input,
+                Err(_) => {
+                    transaction_state.set(TransactionState::Error(
+                        "Failed opening the file.".to_string(),
+                    ));
+                    return;
+                }
+            };
             sign_input.subtype = match transaction_type.read().as_str() {
                 "RECEIVE" => Subtype::RECEIVE,
                 "OPEN" => Subtype::OPEN,
                 _ => Subtype::SEND,
             };
             sign_input.message = unsigned_block;
-            sign_input.to_file(&path).await.unwrap();
+            match sign_input.to_file(&path).await {
+                Ok(_) => {}
+                Err(_) => {
+                    transaction_state.set(TransactionState::Error(
+                        "Failed writting the block to the file.".to_string(),
+                    ));
+                }
+            };
         });
-    };
-
-    let connect_to_socket = move |_| {
-        write_block_to_file(());
 
         let path = app_state.read().account_path.clone();
         let ip_address = ip_address.read().clone();
@@ -420,18 +438,16 @@ fn JoinTransaction() -> Element {
         let client = tokio::spawn(async move {
             tokio::time::sleep(Duration::from_secs(2)).await;
             match frost_sig::client::sign_client::run(&ip_address, PORT, &path).await {
-                Ok(_) => {
-                    println!("Created the server like wonders!")
-                }
+                Ok(_) => {}
                 Err(e) => {
-                    eprintln!("Server error: {}", e);
+                    transaction_state.set(TransactionState::Error(e.to_string()));
                 }
             };
         });
 
         tokio::spawn(async move {
             let _ = tokio::join!(client);
-            //is_completed.set(true);
+            transaction_state.set(TransactionState::Successful);
         });
 
         println!("Client listening.");
@@ -496,9 +512,12 @@ fn JoinTransaction() -> Element {
                 id: "column-section",
                 button {
                     id: "secondary-button",
+                    disabled: match *transaction_state.read() {
+                        TransactionState::Idle | TransactionState::Error(_) => false,
+                        _ => true,
+                    },
                     onclick: connect_to_socket,
                     "Join",
-                    // value: "{input_text}",
                 }
             }
         }

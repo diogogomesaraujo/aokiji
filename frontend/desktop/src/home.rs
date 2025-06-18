@@ -1,26 +1,13 @@
-use std::{
-    fs::File,
-    io::{BufReader, Read},
-    thread::sleep,
-    time::Duration,
-};
-
+use crate::{AppState, Route, TransactionState, MAIN_CSS, PORT};
 use dioxus::prelude::*;
 use dioxus_material_icons::MaterialIconStylesheet;
 use dioxus_router::hooks::use_navigator;
 use frost_sig::{client::SignInput, nano::account::public_key_to_nano_account};
-
-use crate::{AppState, Route, PORT};
-
-const MAIN_CSS: Asset = asset!("/assets/styling/main.css");
-
-#[derive(Clone)]
-enum TransactionState {
-    Idle,
-    Processing,
-    Successful,
-    Error(String),
-}
+use std::{
+    fs::File,
+    io::{BufReader, Read},
+    time::Duration,
+};
 
 #[component]
 pub fn Home() -> Element {
@@ -44,10 +31,9 @@ fn CreateAccountSession() -> Element {
     let mut operation_type = use_signal(|| "OPEN".to_string());
     let mut ip_address = use_signal(|| "localhost".to_string());
     let mut is_completed = use_signal_sync(|| false);
-    let mut is_processing = use_signal_sync(|| false);
+    let mut transaction_state = use_signal_sync(|| TransactionState::Idle);
 
     let mut app_state = use_context::<Signal<AppState>>();
-
     let nav = use_navigator();
 
     use_effect(move || {
@@ -64,7 +50,7 @@ fn CreateAccountSession() -> Element {
                         serde_json::from_str::<SignInput>(&contents).unwrap()
                     }
                     Err(_) => {
-                        nav.push(Route::Alert {});
+                        nav.push(Route::Home {});
                         SignInput::default()
                     }
                 }
@@ -73,7 +59,6 @@ fn CreateAccountSession() -> Element {
             app_state.write().nano_account =
                 public_key_to_nano_account(&sign_input.public_aggregated_key.to_bytes());
             app_state.write().frost_state = sign_input.state;
-
             nav.push(Route::Dashboard {});
         }
     });
@@ -84,15 +69,15 @@ fn CreateAccountSession() -> Element {
         let path = path.read().clone();
 
         let server = tokio::spawn(async move {
-            is_processing.set(true);
+            transaction_state.set(TransactionState::Processing);
             match frost_sig::server::keygen_server::run("localhost", PORT, participants, threshold)
                 .await
             {
-                Ok(_) => {
-                    println!("Created the server like wonders!")
-                }
-                Err(e) => {
-                    eprintln!("Server error: {}", e);
+                Ok(_) => {}
+                Err(_) => {
+                    transaction_state.set(TransactionState::Error(
+                        "Failed to process the transaction".to_string(),
+                    ));
                 }
             };
         });
@@ -100,11 +85,11 @@ fn CreateAccountSession() -> Element {
         let client = tokio::spawn(async move {
             tokio::time::sleep(Duration::from_secs(2)).await;
             match frost_sig::client::keygen_client::run("localhost", PORT, &path).await {
-                Ok(_) => {
-                    println!("Created the server like wonders!")
-                }
-                Err(e) => {
-                    eprintln!("Server error: {}", e);
+                Ok(_) => {}
+                Err(_) => {
+                    transaction_state.set(TransactionState::Error(
+                        "Failed to process the transaction".to_string(),
+                    ));
                 }
             };
         });
@@ -123,11 +108,11 @@ fn CreateAccountSession() -> Element {
 
         let client = tokio::spawn(async move {
             match frost_sig::client::keygen_client::run(&ip_address, PORT, &path).await {
-                Ok(_) => {
-                    println!("Created the server like wonders!")
-                }
-                Err(e) => {
-                    eprintln!("Server error: {}", e);
+                Ok(_) => {}
+                Err(_) => {
+                    transaction_state.set(TransactionState::Error(
+                        "Failed to process the transaction".to_string(),
+                    ));
                 }
             };
         });
@@ -135,10 +120,8 @@ fn CreateAccountSession() -> Element {
         tokio::spawn(async move {
             let _ = tokio::join!(client);
             is_completed.set(true);
-            is_processing.set(false);
+            transaction_state.set(TransactionState::Successful);
         });
-
-        println!("Client listening.");
     };
 
     rsx! {
@@ -206,6 +189,31 @@ fn CreateAccountSession() -> Element {
                                     onchange: move |event| ip_address.set(event.value()),
                                 }
                             }
+                            {
+                                match *transaction_state.read() {
+                                    TransactionState::Processing => {
+                                        rsx! {
+                                            div { style: "display: inline-block; margin-bottom: 14px;" }
+                                            span { id: "secondary", "Creating the account..." }
+                                        }
+                                    }
+                                    TransactionState::Successful => {
+                                        rsx! {
+                                            div { style: "display: inline-block; margin-bottom: 14px;" }
+                                            span { id: "secondary", "Successfully created the account." }
+                                        }
+                                    }
+                                    TransactionState::Error(ref e) => {
+                                        rsx! {
+                                            div { style: "display: inline-block; margin-bottom: 14px;" }
+                                            span { id: "secondary", "{e}" }
+                                        }
+                                    }
+                                    _ => {
+                                        rsx!{}
+                                    }
+                                }
+                            }
                             div { style: "display: inline-block; margin-bottom: 36px;" }
                             div {
                                 id: "column-section",
@@ -218,12 +226,43 @@ fn CreateAccountSession() -> Element {
                         }
                     }
                     _ => rsx!{
+                        {
+                            match *transaction_state.read() {
+                                TransactionState::Processing => {
+                                    rsx! {
+                                        div { style: "display: inline-block; margin-bottom: 14px;" }
+                                        span { id: "secondary", "Creating the account..." }
+                                    }
+                                }
+                                TransactionState::Successful => {
+                                    rsx! {
+                                        div { style: "display: inline-block; margin-bottom: 14px;" }
+                                        span { id: "secondary", "Successfully created the account." }
+                                    }
+                                }
+                                TransactionState::Error(ref e) => {
+                                    rsx! {
+                                        div { style: "display: inline-block; margin-bottom: 14px;" }
+                                        span { id: "secondary", "{e}" }
+                                    }
+                                }
+                                _ => {
+                                    rsx!{}
+                                }
+                            }
+                        }
                         div { style: "display: inline-block; margin-bottom: 36px;" }
                         div {
                             id: "column-section",
                             button {
                                 id: "button",
-                                disabled: is_processing(),
+                                disabled: match transaction_state() {
+                                    TransactionState::Idle | TransactionState::Error(_) => match path.read().to_string().as_str() {
+                                        "" => true,
+                                        _ => false
+                                    },
+                                    _ => true,
+                                },
                                 onclick: open_and_connect_to_socket,
                                 "Create",
                             }

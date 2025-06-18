@@ -398,7 +398,7 @@
       }
     }
   ],
-  "subtype": "RECEIVE",
+  "subtype": "SEND",
   "message": {
     "type": "state",
     "account": "",

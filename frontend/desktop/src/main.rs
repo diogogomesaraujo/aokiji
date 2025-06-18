@@ -12,12 +12,9 @@ use dashboard::Dashboard;
 mod home;
 use home::Home;
 
-mod alert;
-use alert::Alert;
-
 const FAVICON: Asset = asset!("/assets/favicon.ico");
-const MAIN_CSS: Asset = asset!("/assets/main.css");
-
+const APP_CSS: Asset = asset!("/assets/app.css");
+const MAIN_CSS: Asset = asset!("/assets/styling/main.css");
 pub const PORT: u32 = 6705;
 
 #[derive(Clone, Routable, Debug, PartialEq)]
@@ -26,8 +23,14 @@ pub enum Route {
     Home {},
     #[route("/dashboard")]
     Dashboard {},
-    #[route("/alert")]
-    Alert {},
+}
+
+#[derive(Clone)]
+pub enum TransactionState {
+    Idle,
+    Processing,
+    Successful,
+    Error(String),
 }
 
 #[derive(Clone, Debug)]
@@ -74,7 +77,7 @@ fn App() -> Element {
 
     rsx! {
         document::Link { rel: "icon", href: FAVICON }
-        document::Link { rel: "stylesheet", href: MAIN_CSS }
+        document::Link { rel: "stylesheet", href: APP_CSS }
         Router::<Route>{}
     }
 }
