@@ -195,20 +195,40 @@ fn StartTransaction() -> Element {
             let account = app_state.read().nano_account.clone();
             let path = app_state.read().account_path.clone();
             let unsigned_block = match transaction_type.read().as_str() {
-                "OPEN" => UnsignedBlock::create_open(&state, &account)
-                    .await
-                    .unwrap_or(UnsignedBlock::empty()),
-                "RECEIVE" => UnsignedBlock::create_receive(&state, &account)
-                    .await
-                    .unwrap_or(UnsignedBlock::empty()),
-                _ => UnsignedBlock::create_send(
+                "OPEN" => match UnsignedBlock::create_open(&state, &account).await {
+                    Ok(block) => block,
+                    Err(_) => {
+                        transaction_state.set(TransactionState::Error(
+                            "Couldn't create the block.".to_string(),
+                        ));
+                        return;
+                    }
+                },
+                "RECEIVE" => match UnsignedBlock::create_receive(&state, &account).await {
+                    Ok(block) => block,
+                    Err(_) => {
+                        transaction_state.set(TransactionState::Error(
+                            "Couldn't create the block.".to_string(),
+                        ));
+                        return;
+                    }
+                },
+                _ => match UnsignedBlock::create_send(
                     &state,
                     &account,
                     &receivers_account.read(),
                     &amount.read().parse::<f64>().unwrap_or(0.),
                 )
                 .await
-                .unwrap_or(UnsignedBlock::empty()),
+                {
+                    Ok(block) => block,
+                    Err(_) => {
+                        transaction_state.set(TransactionState::Error(
+                            "Couldn't create the block.".to_string(),
+                        ));
+                        return;
+                    }
+                },
             };
             let mut sign_input = match SignInput::from_file(&path).await {
                 Ok(input) => input,
@@ -367,7 +387,7 @@ fn StartTransaction() -> Element {
 #[component]
 fn JoinTransaction() -> Element {
     let mut transaction_type = use_signal(|| "SEND".to_string());
-    let mut ip_address = use_signal(|| "127.0.0.1".to_string());
+    let mut ip_address = use_signal(|| "".to_string());
     let mut receivers_account = use_signal(|| "".to_string());
     let mut amount = use_signal(|| "0".to_string());
 
@@ -392,20 +412,40 @@ fn JoinTransaction() -> Element {
             let account = app_state.read().nano_account.clone();
             let path = app_state.read().account_path.clone();
             let unsigned_block = match transaction_type.read().as_str() {
-                "OPEN" => UnsignedBlock::create_open(&state, &account)
-                    .await
-                    .unwrap_or(UnsignedBlock::empty()),
-                "RECEIVE" => UnsignedBlock::create_receive(&state, &account)
-                    .await
-                    .unwrap_or(UnsignedBlock::empty()),
-                _ => UnsignedBlock::create_send(
+                "OPEN" => match UnsignedBlock::create_open(&state, &account).await {
+                    Ok(block) => block,
+                    Err(_) => {
+                        transaction_state.set(TransactionState::Error(
+                            "Couldn't create the block.".to_string(),
+                        ));
+                        return;
+                    }
+                },
+                "RECEIVE" => match UnsignedBlock::create_receive(&state, &account).await {
+                    Ok(block) => block,
+                    Err(_) => {
+                        transaction_state.set(TransactionState::Error(
+                            "Couldn't create the block.".to_string(),
+                        ));
+                        return;
+                    }
+                },
+                _ => match UnsignedBlock::create_send(
                     &state,
                     &account,
                     &receivers_account.read(),
                     &amount.read().parse::<f64>().unwrap_or(0.),
                 )
                 .await
-                .unwrap_or(UnsignedBlock::empty()),
+                {
+                    Ok(block) => block,
+                    Err(_) => {
+                        transaction_state.set(TransactionState::Error(
+                            "Couldn't create the block.".to_string(),
+                        ));
+                        return;
+                    }
+                },
             };
             let mut sign_input = match SignInput::from_file(&path).await {
                 Ok(input) => input,
@@ -428,29 +468,29 @@ fn JoinTransaction() -> Element {
                     transaction_state.set(TransactionState::Error(
                         "Failed writting the block to the file.".to_string(),
                     ));
+                    return;
                 }
             };
+
+            let path = app_state.read().account_path.clone();
+            let ip_address = ip_address.read().clone();
+
+            let client = tokio::spawn(async move {
+                tokio::time::sleep(Duration::from_secs(2)).await;
+                match frost_sig::client::sign_client::run(&ip_address, PORT, &path).await {
+                    Ok(_) => {}
+                    Err(e) => {
+                        transaction_state.set(TransactionState::Error(e.to_string()));
+                        return;
+                    }
+                };
+            });
+
+            tokio::spawn(async move {
+                let _ = tokio::join!(client);
+                transaction_state.set(TransactionState::Successful);
+            });
         });
-
-        let path = app_state.read().account_path.clone();
-        let ip_address = ip_address.read().clone();
-
-        let client = tokio::spawn(async move {
-            tokio::time::sleep(Duration::from_secs(2)).await;
-            match frost_sig::client::sign_client::run(&ip_address, PORT, &path).await {
-                Ok(_) => {}
-                Err(e) => {
-                    transaction_state.set(TransactionState::Error(e.to_string()));
-                }
-            };
-        });
-
-        tokio::spawn(async move {
-            let _ = tokio::join!(client);
-            transaction_state.set(TransactionState::Successful);
-        });
-
-        println!("Client listening.");
     };
 
     rsx! {
@@ -486,6 +526,7 @@ fn JoinTransaction() -> Element {
                             span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Amount (XNO):" }
                             input {
                                 id: "input",
+                                value: amount(),
                                 r#type: "number",
                                 min: "0",
                                 onchange: move |event| amount.set(event.value()),
@@ -513,7 +554,10 @@ fn JoinTransaction() -> Element {
                 button {
                     id: "secondary-button",
                     disabled: match *transaction_state.read() {
-                        TransactionState::Idle | TransactionState::Error(_) => false,
+                        TransactionState::Idle | TransactionState::Error(_) => match (receivers_account.read().to_string().as_str(), ip_address.read().to_string().as_str()) {
+                            ("", _) | (_, "") => true,
+                            _ => false
+                        },
                         _ => true,
                     },
                     onclick: connect_to_socket,
@@ -612,7 +656,7 @@ fn Transactions() -> Element {
                                                 span { id: "secondary" , style: "text-overflow: ellipsis;
                                                   max-width: 200px; white-space: nowrap;
                                                     overflow: hidden;", strong {  {format!("{}", transaction.hash)} } }
-                                                strong { id: "sub-heading" , {format!("{:?}", transaction.amount.parse::<u64>().unwrap_or(0u64) as f64 / 10.)} }
+                                                strong { id: "sub-heading" , {format!("{}", transaction.amount.parse::<u128>().unwrap_or(0u128) as f64 / 1_000_000_000_000_000_000_000_000_000_000.0)} }
                                             }
                                         }
                                     }

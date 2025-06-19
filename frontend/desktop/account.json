@@ -401,10 +401,10 @@
   "subtype": "SEND",
   "message": {
     "type": "state",
-    "account": "",
-    "previous": "",
-    "representative": "",
-    "balance": "",
-    "link": ""
+    "account": "nano_37ig7sigk36k6ekoa55gu6hfxkb3fdujfr9qd5gf4gkuiezeys8cnmw9pcot",
+    "previous": "34CC4A241A885A570AEB855B1831CBC9AFE40383B5B418A98E6C35CBC3997A9A",
+    "representative": "nano_37ig7sigk36k6ekoa55gu6hfxkb3fdujfr9qd5gf4gkuiezeys8cnmw9pcot",
+    "balance": "0",
+    "link": "1E57C48BA45E96C4FC07A94FB496AB36F4B4CB2A716FA1EE86BD6549C5939EAD"
   }
 }
