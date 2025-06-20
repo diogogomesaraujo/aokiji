@@ -333,23 +333,47 @@ fn OpenAccount() -> Element {
             div {
                 id: "column-section",
                 span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Select the File:" }
-                input {
-                    id: "input",
-                    r#type: "file",
-                    onchange: move |event| {
-                        match &event.files() {
-                            Some(file_engine) => {
-                                let files = file_engine.files();
-                                match files.get(0) {
-                                    Some(file) => {
-                                        path.set(file.clone());
-                                    },
-                                    None => {}
-                                }
-                            },
-                            None => {}
+                div {
+                    style: "display: flex;
+                            flex-direction: row;
+                            align-items: center;
+                            max-width: 100%;
+                            overflow: hidden;
+                            background-color: #1a1f25;
+                            border-radius: 12px;
+                            padding: 8px 12px;",
+                    input {
+                        id: "input",
+                        r#type: "file",
+                        style: "color: transparent; width: auto; flex-shrink: 0;",
+                        onchange: move |event| {
+                            match &event.files() {
+                                Some(file_engine) => {
+                                    let files = file_engine.files();
+                                    match files.get(0) {
+                                        Some(file) => {
+                                            path.set(file.clone());
+                                        },
+                                        None => {}
+                                    }
+                                },
+                                None => {}
+                            }
+                        },
+                    }
+                    span {
+                        id: "secondary",
+                        style: "white-space: nowrap;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                                max-width: 200px;
+                                display: inline-block;
+                                margin-left: -220px;",
+                        match path().as_str() {
+                            "" => "No file selected.",
+                            path => path,
                         }
-                    },
+                    }
                 }
             }
             {

@@ -597,7 +597,7 @@ fn JoinTransaction() -> Element {
             div {
                 id: "column-section",
                 button {
-                    id: "button",
+                    id: "secondary-button",
                     disabled: match *transaction_state.read() {
                         TransactionState::Idle | TransactionState::Error(_) => match (receivers_account().as_str(), ip_address().as_str(), transaction_type().as_str()) {
                             ("", _, "SEND") => true,
@@ -858,7 +858,7 @@ fn TransactionConfig() -> Element {
     rsx! {
         div {
             id: "card",
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "TRANSACTION CONFIG" }
+            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "CONFIGURATION" }
             div {
                 id: "column-section",
                 span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "PPC Key:" }
@@ -886,7 +886,7 @@ fn TransactionConfig() -> Element {
                 button {
                     id: "button",
                     onclick: save_config,
-                    "SAVE",
+                    "Save",
                 }
             }
         }
