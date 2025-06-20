@@ -31,6 +31,8 @@ pub fn Dashboard() -> Element {
                     button { id: "menu-button", onclick: move |_| menu_item.set("transaction".to_string()), "Transaction" }
                     div { style: "display: inline-block; margin-left: 14px;" }
                     button { id: "menu-button", onclick: move |_| menu_item.set("history".to_string()), "History" }
+                    div { style: "display: inline-block; margin-left: 14px;" }
+                    button { id: "menu-button", onclick: move |_| menu_item.set("settings".to_string()), "Settings" }
                 }
             }
             div { style: "display: inline-block; margin-bottom: 14px;" }
@@ -370,8 +372,8 @@ fn StartTransaction() -> Element {
                 button {
                     id: "button",
                     disabled: match *transaction_state.read() {
-                        TransactionState::Idle | TransactionState::Error(_) => match receivers_account.read().to_string().as_str() {
-                            "" => true,
+                        TransactionState::Idle | TransactionState::Error(_) => match (receivers_account().as_str(), transaction_type().as_str()) {
+                            ("", "SEND") => true,
                             _ => false
                         },
                         _ => true,
@@ -387,19 +389,18 @@ fn StartTransaction() -> Element {
 #[component]
 fn JoinTransaction() -> Element {
     let mut transaction_type = use_signal(|| "SEND".to_string());
-    let mut ip_address = use_signal(|| "".to_string());
     let mut receivers_account = use_signal(|| "".to_string());
+    let mut ip_address = use_signal(|| "".to_string());
     let mut amount = use_signal(|| "0".to_string());
 
     let mut transaction_state = use_signal_sync(|| TransactionState::Idle);
 
     let app_state = use_context::<Signal<AppState>>();
 
-    let connect_to_socket = move |_| {
+    let open_socket_and_connect = move |_| {
         dotenv::dotenv().ok();
 
         use_future(move || async move {
-            transaction_state.set(TransactionState::Processing);
             let state = RPCState::new(match &std::env::var("URL") {
                 Ok(url) => url,
                 Err(_) => {
@@ -449,10 +450,8 @@ fn JoinTransaction() -> Element {
             };
             let mut sign_input = match SignInput::from_file(&path).await {
                 Ok(input) => input,
-                Err(_) => {
-                    transaction_state.set(TransactionState::Error(
-                        "Failed opening the file.".to_string(),
-                    ));
+                Err(e) => {
+                    transaction_state.set(TransactionState::Error(e.to_string()));
                     return;
                 }
             };
@@ -464,13 +463,13 @@ fn JoinTransaction() -> Element {
             sign_input.message = unsigned_block;
             match sign_input.to_file(&path).await {
                 Ok(_) => {}
-                Err(_) => {
-                    transaction_state.set(TransactionState::Error(
-                        "Failed writting the block to the file.".to_string(),
-                    ));
+                Err(e) => {
+                    transaction_state.set(TransactionState::Error(e.to_string()));
                     return;
                 }
             };
+
+            transaction_state.set(TransactionState::Processing);
 
             let path = app_state.read().account_path.clone();
             let ip_address = ip_address.read().clone();
@@ -490,6 +489,8 @@ fn JoinTransaction() -> Element {
                 let _ = tokio::join!(client);
                 transaction_state.set(TransactionState::Successful);
             });
+
+            println!("Client listening.");
         });
     };
 
@@ -515,24 +516,12 @@ fn JoinTransaction() -> Element {
                 input {
                     id: "input",
                     onchange: move |event| ip_address.set(event.value()),
+
                 }
             }
-            div { style: "display: inline-block; margin-bottom: 14px;" }
             match transaction_type.to_string().as_str() {
                 "SEND" => {
                     rsx! {
-                        div {
-                            id: "column-section",
-                            span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Amount (XNO):" }
-                            input {
-                                id: "input",
-                                value: amount(),
-                                r#type: "number",
-                                min: "0",
-                                onchange: move |event| amount.set(event.value()),
-
-                            }
-                        }
                         div { style: "display: inline-block; margin-bottom: 14px;" }
                         div {
                             id: "column-section",
@@ -542,25 +531,65 @@ fn JoinTransaction() -> Element {
                                 onchange: move |event| receivers_account.set(event.value()),
                             }
                         }
+                        div { style: "display: inline-block; margin-bottom: 14px;" }
+                        div {
+                            id: "column-section",
+                            span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Amount (XNO):" }
+                            input {
+                                id: "input",
+                                value: "0",
+                                r#type: "number",
+                                min: "0",
+                                onchange: move |event| amount.set(event.value()),
+
+                            }
+                        }
                     }
                 }
                 _ => {
-                    rsx!{}
+                    rsx! {
+                    }
+                }
+            }
+            {
+                match *transaction_state.read() {
+                    TransactionState::Processing => {
+                        rsx! {
+                            div { style: "display: inline-block; margin-bottom: 14px;" }
+                            span { id: "secondary", "Processing the transaction..." }
+                        }
+                    }
+                    TransactionState::Successful => {
+                        rsx! {
+                            div { style: "display: inline-block; margin-bottom: 14px;" }
+                            span { id: "secondary", "Transaction was successful." }
+                        }
+                    }
+                    TransactionState::Error(ref e) => {
+                        rsx! {
+                            div { style: "display: inline-block; margin-bottom: 14px;" }
+                            span { id: "secondary", "{e}" }
+                        }
+                    }
+                    _ => {
+                        rsx!{}
+                    }
                 }
             }
             div { style: "display: inline-block; margin-bottom: 36px;" }
             div {
                 id: "column-section",
                 button {
-                    id: "secondary-button",
+                    id: "button",
                     disabled: match *transaction_state.read() {
-                        TransactionState::Idle | TransactionState::Error(_) => match (receivers_account.read().to_string().as_str(), ip_address.read().to_string().as_str()) {
-                            ("", _) | (_, "") => true,
+                        TransactionState::Idle | TransactionState::Error(_) => match (receivers_account().as_str(), ip_address().as_str(), transaction_type().as_str()) {
+                            ("", _, "SEND") => true,
+                            (_, "", "SEND") => true,
                             _ => false
                         },
                         _ => true,
                     },
-                    onclick: connect_to_socket,
+                    onclick: open_socket_and_connect,
                     "Join",
                 }
             }
