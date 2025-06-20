@@ -1,5 +1,5 @@
 body {
-    font-family: "Inter", sans-serif;
+    font-family: "Satoshi", sans-serif;
 }
 
 #secondary {
@@ -99,7 +99,7 @@ body {
     padding: 8px;
     border-radius: 12px;
     border-width: 0px;
-    font-family: "Inter", sans-serif;
+    font-family: "Satoshi", sans-serif;
     font-size: 18px;
 }
 
@@ -118,7 +118,7 @@ body {
     padding: 8px;
     border-radius: 12px;
     border-width: 0px;
-    font-family: "Inter", sans-serif;
+    font-family: "Satoshi", sans-serif;
     font-size: 18px;
 }
 
@@ -148,14 +148,36 @@ body {
     font-size: 24px;
     font-weight: bold;
     text-overflow: ellipsis;
-    max-width: 400px;
+    max-width: 300px;
     white-space: nowrap;
     overflow: hidden;
 }
 
-.nano-account:hover {
-    white-space: normal;
-    max-width: 400px;
-    word-break: break-all;
-    overflow: visible;
+.clipboard {
+    transform: scaleX(-1);
+    color: #b7d0fe;
+    background-color: transparent;
+    outline: none;
+    border: none;
+}
+
+.clipboard:active {
+    opacity: 0.8;
+    background-color: transparent;
+    outline: none;
+}
+
+.clipboard:focus {
+    outline: none;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #5b87cf;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
 }

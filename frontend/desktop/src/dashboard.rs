@@ -1,4 +1,5 @@
 use crate::{AppState, TransactionState, MAIN_CSS, PORT};
+use arboard::Clipboard;
 use dioxus::prelude::*;
 use dioxus_material_icons::{MaterialIcon, MaterialIconStylesheet};
 use frost_sig::{
@@ -10,6 +11,8 @@ use frost_sig::{
 };
 use routes::{get_nano_price_euro, NanoPriceEuro, NanoPriceResponse};
 use std::time::Duration;
+
+const AVATAR: Asset = asset!("/assets/images/avatar.png");
 
 #[component]
 pub fn Dashboard() -> Element {
@@ -31,8 +34,6 @@ pub fn Dashboard() -> Element {
                     button { id: "menu-button", onclick: move |_| menu_item.set("transaction".to_string()), "Transaction" }
                     div { style: "display: inline-block; margin-left: 14px;" }
                     button { id: "menu-button", onclick: move |_| menu_item.set("history".to_string()), "History" }
-                    div { style: "display: inline-block; margin-left: 14px;" }
-                    button { id: "menu-button", onclick: move |_| menu_item.set("settings".to_string()), "Settings" }
                 }
             }
             div { style: "display: inline-block; margin-bottom: 14px;" }
@@ -41,7 +42,7 @@ pub fn Dashboard() -> Element {
                     rsx! {
                         Balance{}
                         div { style: "display: inline-block; margin-bottom: 14px;" }
-                        Participants{}
+                        PublicShare{}
                         div { style: "display: inline-block; margin-bottom: 14px;" }
                         AccountInfoSection {  }
                     }
@@ -51,6 +52,8 @@ pub fn Dashboard() -> Element {
                         StartTransaction{}
                         div { style: "display: inline-block; margin-bottom: 14px;" }
                         JoinTransaction{}
+                        div { style: "display: inline-block; margin-bottom: 14px;" }
+                        TransactionConfig{}
                     }
                 },
                 "history" => {
@@ -72,8 +75,8 @@ fn Balance() -> Element {
 
     let balance_future = use_resource(move || {
         let account = account.clone();
-        dotenv::dotenv().ok();
-        let state = RPCState::new(&std::env::var("URL").unwrap());
+        let config = app_state.read().config_file.clone();
+        let state = RPCState::new(&config.url);
         async move { AccountBalance::get_from_rpc(&state, &account).await }
     });
     let balance_info: AccountBalance = match &*balance_future.read_unchecked() {
@@ -153,19 +156,51 @@ fn Balance() -> Element {
 #[component]
 fn Header() -> Element {
     let app_state = use_context::<Signal<AppState>>();
+
+    let copy_to_clipboard = move |_| {
+        let mut clipboard = match Clipboard::new() {
+            Ok(clipboard) => clipboard,
+            Err(_) => return,
+        };
+        let account = app_state.read().nano_account.clone();
+        match clipboard.set_text(account) {
+            Ok(_) => {}
+            Err(_) => return,
+        }
+    };
+
     rsx! {
         div {
             id: "header",
             div {
-                style: "display: flex; flex-direction: column;",
-                a {
-                    class: "nano-account",
-                    { app_state.read().nano_account.clone() }
+                style: "display: flex; align-items: center; gap: 12px;",
+                div {
+                    class: "avatar",
+                    img {
+                        src: "{AVATAR}",
+                        style: "width: 100%; height: 100%; object-fit: cover;"
+                    }
                 }
-                div { id:"secondary", a { {
-                    let frost_state = app_state.read().frost_state.clone();
-                    format!("{} Participants", frost_state.participants)
-                } } }
+                div {
+                    style: "display: flex; flex-direction: column;",
+                    div {
+                        style: "display: flex; align-items: center; gap: 8px;",
+                        a {
+                            class: "nano-account",
+                            { app_state.read().nano_account.clone() }
+                        }
+                        button {
+                            class: "clipboard",
+                            onclick: copy_to_clipboard,
+                            style: "font-size: 20px;",
+                            MaterialIcon { name: "content_copy" }
+                        }
+                    }
+                    div { id:"secondary", a { {
+                        let frost_state = app_state.read().frost_state.clone();
+                        format!("{} Participants", frost_state.participants)
+                    } } }
+                }
             }
         }
     }
@@ -182,18 +217,9 @@ fn StartTransaction() -> Element {
     let app_state = use_context::<Signal<AppState>>();
 
     let open_socket_and_connect = move |_| {
-        dotenv::dotenv().ok();
-
         use_future(move || async move {
-            let state = RPCState::new(match &std::env::var("URL") {
-                Ok(url) => url,
-                Err(_) => {
-                    transaction_state.set(TransactionState::Error(
-                        "Failed getting the url.".to_string(),
-                    ));
-                    return;
-                }
-            });
+            let url = app_state.read().config_file.url.clone();
+            let state = RPCState::new(&url);
             let account = app_state.read().nano_account.clone();
             let path = app_state.read().account_path.clone();
             let unsigned_block = match transaction_type.read().as_str() {
@@ -398,18 +424,9 @@ fn JoinTransaction() -> Element {
     let app_state = use_context::<Signal<AppState>>();
 
     let open_socket_and_connect = move |_| {
-        dotenv::dotenv().ok();
-
         use_future(move || async move {
-            let state = RPCState::new(match &std::env::var("URL") {
-                Ok(url) => url,
-                Err(_) => {
-                    transaction_state.set(TransactionState::Error(
-                        "Failed getting the url.".to_string(),
-                    ));
-                    return;
-                }
-            });
+            let url = app_state.read().config_file.url.clone();
+            let state = RPCState::new(&url);
             let account = app_state.read().nano_account.clone();
             let path = app_state.read().account_path.clone();
             let unsigned_block = match transaction_type.read().as_str() {
@@ -640,13 +657,12 @@ fn PersonIconYellow() -> Element {
 #[component]
 fn Transactions() -> Element {
     let transactions = use_resource(async move || {
-        dotenv::dotenv().ok();
-
         let app_state = use_context::<Signal<AppState>>();
-        let state = RPCState::new(&std::env::var("URL").unwrap());
+        let config = app_state.read().config_file.clone();
+        let state = RPCState::new(&config.url);
         let nano_account = app_state.read().nano_account.clone();
 
-        match AccountHistory::get_from_rpc(&state, &nano_account, 20u32).await {
+        match AccountHistory::get_from_rpc(&state, &nano_account, 50u32).await {
             Ok(account_history) => account_history.history,
             Err(_) => Vec::new(),
         }
@@ -704,7 +720,7 @@ fn Transactions() -> Element {
 }
 
 #[component]
-fn Participants() -> Element {
+fn PublicShare() -> Element {
     let app_state = use_context::<Signal<AppState>>();
     let public_share = app_state.read().public_share.clone();
     rsx! {
@@ -739,8 +755,8 @@ fn AccountInfoSection() -> Element {
     let account_info_future = use_resource(move || {
         let account = account.clone();
         async move {
-            dotenv::dotenv().ok();
-            let state = RPCState::new(&std::env::var("URL").unwrap());
+            let config = app_state.read().config_file.clone();
+            let state = RPCState::new(&config.url);
             AccountInfo::get_from_rpc(&state, &account).await
         }
     });
@@ -815,6 +831,62 @@ fn AccountInfoSection() -> Element {
                 div {
                     id: "card",
                     span { id: "secondary", "Loading account information..." }
+                }
+            }
+        }
+    }
+}
+
+#[component]
+fn TransactionConfig() -> Element {
+    let mut app_state = use_context::<Signal<AppState>>();
+
+    let config = app_state.read().config_file.clone();
+
+    let mut rpc_url = use_signal(|| config.url.clone());
+    let mut api_key = use_signal(|| config.key.clone());
+
+    let save_config = move |_| {
+        let mut config = app_state.read().config_file.clone();
+        config.key = api_key.read().clone();
+        config.url = rpc_url.read().clone();
+
+        config.to_file_sync("config.json").unwrap();
+        app_state.write().config_file = config;
+    };
+
+    rsx! {
+        div {
+            id: "card",
+            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "TRANSACTION CONFIG" }
+            div {
+                id: "column-section",
+                span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "PPC Key:" }
+                input {
+                    id: "input",
+                    value: api_key(),
+                    onchange: move |event| api_key.set(event.value()),
+
+                }
+            }
+            div { style: "display: inline-block; margin-bottom: 14px;" }
+            div {
+                id: "column-section",
+                span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "RPC Url:" }
+                input {
+                    id: "input",
+                    value: rpc_url(),
+                    onchange: move |event| rpc_url.set(event.value()),
+
+                }
+            }
+            div { style: "display: inline-block; margin-bottom: 36px;" }
+            div {
+                id: "column-section",
+                button {
+                    id: "button",
+                    onclick: save_config,
+                    "SAVE",
                 }
             }
         }

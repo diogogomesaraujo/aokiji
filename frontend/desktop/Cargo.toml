@@ -18,5 +18,5 @@ futures = "0.3.31"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7.14", features = ["full"] }
 hex = "0.4.3"
-dotenv = "0.15.0"
 frost-sig = { git = "https://github.com/diogogomesaraujo/frost-sig.git" }
+arboard = "3.5.0"
