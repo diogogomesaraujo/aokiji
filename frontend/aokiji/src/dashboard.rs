@@ -12,10 +12,13 @@ use frost_sig::{
 use routes::{get_nano_price_euro, NanoPriceEuro, NanoPriceResponse};
 use std::time::Duration;
 
+/// Constant value for the path of the avatar image.
 const AVATAR: Asset = asset!("/assets/images/avatar.png");
 
+/// Function that represents the Nano account's dashboard.
 #[component]
 pub fn Dashboard() -> Element {
+    // mutable state that represents the section that is currently selected.
     let mut menu_item = use_signal(|| "account_details".to_string());
 
     rsx! {
@@ -67,12 +70,16 @@ pub fn Dashboard() -> Element {
     }
 }
 
+/// Function that represents the section with the account's balance and receivable Nano.
 #[component]
 fn Balance() -> Element {
+    // represents the shared state of the application
     let app_state = use_context::<Signal<AppState>>();
 
+    // nano account stored in the app state
     let account = app_state.read().nano_account.clone();
 
+    // closure that gets the balance from the RPC
     let balance_future = use_resource(move || {
         let account = account.clone();
         let config = app_state.read().config_file.clone();
@@ -87,6 +94,7 @@ fn Balance() -> Element {
         None => AccountBalance::default(),
     };
 
+    // closure that gets the updated nano price
     let nano_price_future = use_resource(|| async { get_nano_price_euro().await });
     let nano_price = match &*nano_price_future.read_unchecked() {
         Some(res) => (*res).clone(),
@@ -153,16 +161,22 @@ fn Balance() -> Element {
     }
 }
 
+/// Function that represents the header section of the dashboard.
 #[component]
 fn Header() -> Element {
+    // represents the shared state of the application
     let app_state = use_context::<Signal<AppState>>();
 
+    // closure that copies the nano account to the clipboard of the user
     let copy_to_clipboard = move |_| {
         let mut clipboard = match Clipboard::new() {
             Ok(clipboard) => clipboard,
             Err(_) => return,
         };
+
+        // nano account stored in the app state
         let account = app_state.read().nano_account.clone();
+
         match clipboard.set_text(account) {
             Ok(_) => {}
             Err(_) => return,
@@ -206,16 +220,25 @@ fn Header() -> Element {
     }
 }
 
+/// Function that represents the Start Transaction section of the account's dashboard.
 #[component]
 fn StartTransaction() -> Element {
+    // mutable state that represents the type of transaction selected
     let mut transaction_type = use_signal(|| "SEND".to_string());
+
+    // mutable state that represents the account that will receive the sent Nano
     let mut receivers_account = use_signal(|| "".to_string());
+
+    // mutable state that represents the amount of Nano sent
     let mut amount = use_signal(|| "0".to_string());
 
+    // mutable synchronous state that represents the state of the transaction in real-time
     let mut transaction_state = use_signal_sync(|| TransactionState::Idle);
 
+    // represents the shared state of the application
     let app_state = use_context::<Signal<AppState>>();
 
+    // closure that opens the socket that will be used for the transaction and also connects as a client
     let open_socket_and_connect = move |_| {
         use_future(move || async move {
             let url = app_state.read().config_file.url.clone();
