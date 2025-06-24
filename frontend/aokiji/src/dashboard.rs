@@ -283,6 +283,7 @@ fn StartTransaction() -> Element {
 
             let state = app_state.read().frost_state.clone();
             let path = app_state.read().account_path.clone();
+            let config_file_path = app_state.read().config_file_path.clone();
             let server = tokio::spawn(async move {
                 match frost_sig::server::sign_server::run(
                     "localhost",
@@ -302,7 +303,14 @@ fn StartTransaction() -> Element {
 
             let client = tokio::spawn(async move {
                 tokio::time::sleep(Duration::from_secs(2)).await;
-                match frost_sig::client::sign_client::run("localhost", PORT, &path).await {
+                match frost_sig::client::sign_client::run(
+                    "localhost",
+                    PORT,
+                    &path,
+                    &config_file_path,
+                )
+                .await
+                {
                     Ok(_) => {}
                     Err(e) => {
                         transaction_state.set(TransactionState::Error(e.to_string()));
@@ -489,11 +497,19 @@ fn JoinTransaction() -> Element {
             transaction_state.set(TransactionState::Processing);
 
             let path = app_state.read().account_path.clone();
+            let config_file_path = app_state.read().config_file_path.clone();
             let ip_address = ip_address.read().clone();
 
             let client = tokio::spawn(async move {
                 tokio::time::sleep(Duration::from_secs(2)).await;
-                match frost_sig::client::sign_client::run(&ip_address, PORT, &path).await {
+                match frost_sig::client::sign_client::run(
+                    &ip_address,
+                    PORT,
+                    &path,
+                    &config_file_path,
+                )
+                .await
+                {
                     Ok(_) => {}
                     Err(e) => {
                         transaction_state.set(TransactionState::Error(e.to_string()));
