@@ -1,0 +1,21 @@
+[application]
+name = "aokiji"
+default_platform = "desktop"
+out_dir = "dist"
+asset_dir = "assets"
+
+[bundle]
+name = "Aokiji"
+identifier = "com.aokiji.wallet"
+publisher = "Diogo Gomes de Araújo"
+icon = ["assets/icon.icns"]
+version = "1.0.0"
+category = "Finance"
+short_description = "Nano Cryptocurrency Wallet"
+long_description = """
+Aokiji is a open-source group signature Nano cryptocurrency wallet.
+"""
+osx_frameworks = []
+
+[desktop]
+title = "Aokiji"

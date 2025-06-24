@@ -114,7 +114,7 @@ fn Balance() -> Element {
     rsx! {
         div {
             id: "card",
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "TOTAL BALANCE" }
+            strong { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "TOTAL BALANCE" }
             div {
                 style: "display: inline-block; margin-bottom: 36px;",
                 div {
@@ -184,7 +184,7 @@ fn Header() -> Element {
                 div {
                     style: "display: flex; flex-direction: column;",
                     div {
-                        style: "display: flex; align-items: center; gap: 8px;",
+                        style: "display: flex; align-items: center; gap: 0px;",
                         a {
                             class: "nano-account",
                             { app_state.read().nano_account.clone() }
@@ -192,7 +192,7 @@ fn Header() -> Element {
                         button {
                             class: "clipboard",
                             onclick: copy_to_clipboard,
-                            style: "font-size: 20px;",
+                            style: "font-size: 20px; margin-left: -8px;",
                             MaterialIcon { name: "content_copy" }
                         }
                     }
@@ -323,7 +323,7 @@ fn StartTransaction() -> Element {
     rsx! {
         div {
             id: "card",
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "START TRANSACTION" }
+            strong { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "START TRANSACTION" }
             div {
                 id: "column-section",
                 span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Type:" }
@@ -514,7 +514,7 @@ fn JoinTransaction() -> Element {
     rsx! {
         div {
             id: "card",
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "JOIN TRANSACTION" }
+            strong { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "JOIN TRANSACTION" }
             div {
                 id: "column-section",
                 span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Type:" }
@@ -618,7 +618,7 @@ fn JoinTransaction() -> Element {
 fn SendIcon() -> Element {
     rsx! {
         div {
-            style: "font-size: 40px; transform: scaleX(-1); color: #B7D0FE;",
+            style: "font-size: 40px; transform: scaleX(-1); color: #5B87CF;",
             MaterialIcon { name: "reply" }
         }
     }
@@ -628,7 +628,7 @@ fn SendIcon() -> Element {
 fn ReceiveIcon() -> Element {
     rsx! {
         div {
-            style: "font-size: 40px; color: #5B87CF;",
+            style: "font-size: 40px; color: #B7D0FE;",
             MaterialIcon { name: "reply" }
         }
     }
@@ -676,7 +676,7 @@ fn Transactions() -> Element {
                 match &*transactions.read_unchecked() {
                     Some(transaction_list) => {
                         rsx! {
-                            span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "TRANSACTION HISTORY" }
+                            strong { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "TRANSACTION HISTORY" }
                             for (i, transaction) in transaction_list.iter().enumerate() {
                                 div {
                                     id: "transaction",
@@ -726,7 +726,7 @@ fn PublicShare() -> Element {
     rsx! {
         div {
             id: "card",
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "PUBLIC KEY SHARE" }
+            strong { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "PUBLIC KEY SHARE" }
             div {
                 id: "column-section",
                 div {
@@ -766,7 +766,7 @@ fn AccountInfoSection() -> Element {
             rsx! {
                 div {
                     id: "card",
-                    span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "FRONTIER" }
+                    strong { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "FRONTIER" }
                     div {
                         div {
                             id: "fill-card",
@@ -776,7 +776,7 @@ fn AccountInfoSection() -> Element {
                         }
                     }
                     div { style: "display: inline-block; margin-bottom: 28px;" }
-                    span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "OPEN BLOCK" }
+                    strong { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "OPEN BLOCK" }
                     div {
                         div {
                             id: "fill-card",
@@ -786,7 +786,7 @@ fn AccountInfoSection() -> Element {
                         }
                     }
                     div { style: "display: inline-block; margin-bottom: 28px;" }
-                    span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "REPRESENTATIVE" }
+                    strong { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "REPRESENTATIVE" }
                     div {
                         div {
                             id: "fill-card",
@@ -796,7 +796,7 @@ fn AccountInfoSection() -> Element {
                         }
                     }
                     div { style: "display: inline-block; margin-bottom: 28px;" }
-                    span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "BALANCE" }
+                    strong { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "BALANCE" }
                     div {
                         div {
                             id: "fill-card",
@@ -806,7 +806,7 @@ fn AccountInfoSection() -> Element {
                         }
                     }
                     div { style: "display: inline-block; margin-bottom: 28px;" }
-                    span { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "BLOCK COUNT" }
+                    strong { id: "secondary" , style: "display: inline-block; margin-bottom: 14px;", "BLOCK COUNT" }
                     div {
                         div {
                             id: "fill-card",
@@ -848,20 +848,21 @@ fn TransactionConfig() -> Element {
 
     let save_config = move |_| {
         let mut config = app_state.read().config_file.clone();
+        let config_file_path = app_state.read().config_file_path.clone();
         config.key = api_key.read().clone();
         config.url = rpc_url.read().clone();
 
-        config.to_file_sync("config.json").unwrap();
+        config.to_file_sync(&config_file_path).unwrap();
         app_state.write().config_file = config;
     };
 
     rsx! {
         div {
             id: "card",
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "CONFIGURATION" }
+            strong { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "RPC CONFIGURATION" }
             div {
                 id: "column-section",
-                span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "PPC Key:" }
+                span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Key:" }
                 input {
                     id: "input",
                     value: api_key(),
@@ -872,7 +873,7 @@ fn TransactionConfig() -> Element {
             div { style: "display: inline-block; margin-bottom: 14px;" }
             div {
                 id: "column-section",
-                span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "RPC Url:" }
+                span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Url:" }
                 input {
                     id: "input",
                     value: rpc_url(),

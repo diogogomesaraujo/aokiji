@@ -127,7 +127,7 @@ fn CreateAccountSession() -> Element {
     rsx! {
         div {
             id: "card",
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "CREATE ACCOUNT SESSION" }
+            strong { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "CREATE ACCOUNT SESSION" }
                 div { style: "display: inline-block; margin-bottom: 14px;" }
                 div {
                     id: "column-section",
@@ -329,7 +329,7 @@ fn OpenAccount() -> Element {
     rsx! {
         div {
             id: "card",
-            span { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "OPEN ACCOUNT" }
+            strong { id: "secondary" , style: "display: inline-block; margin-bottom: 36px;", "OPEN ACCOUNT" }
             div {
                 id: "column-section",
                 span { id: "sub-heading", style: "display: inline-block; margin-bottom: 8px;", "Select the File:" }
@@ -339,7 +339,7 @@ fn OpenAccount() -> Element {
                             align-items: center;
                             max-width: 100%;
                             overflow: hidden;
-                            background-color: #1a1f25;
+                            background-color: #161e26;
                             border-radius: 12px;
                             padding: 8px 12px;",
                     input {

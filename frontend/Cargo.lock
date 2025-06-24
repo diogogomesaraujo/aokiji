@@ -33,6 +33,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e16d2d3311acee920a9eb8d33b8cbc1787ce4a264e85f964c2404b969bdcd487"
 
 [[package]]
+name = "aokiji"
+version = "0.1.0"
+dependencies = [
+ "arboard",
+ "dioxus",
+ "dioxus-desktop",
+ "dioxus-material-icons",
+ "dioxus-router",
+ "dirs",
+ "frost-sig",
+ "futures",
+ "hex",
+ "image",
+ "reqwest",
+ "routes",
+ "serde",
+ "serde_json",
+ "tao 0.33.0",
+ "tokio",
+ "tokio-util",
+]
+
+[[package]]
 name = "arbitrary"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -983,28 +1006,6 @@ dependencies = [
  "quote",
  "rustc_version",
  "syn 2.0.103",
-]
-
-[[package]]
-name = "desktop"
-version = "0.1.0"
-dependencies = [
- "arboard",
- "dioxus",
- "dioxus-desktop",
- "dioxus-material-icons",
- "dioxus-router",
- "frost-sig",
- "futures",
- "hex",
- "image",
- "reqwest",
- "routes",
- "serde",
- "serde_json",
- "tao 0.33.0",
- "tokio",
- "tokio-util",
 ]
 
 [[package]]
