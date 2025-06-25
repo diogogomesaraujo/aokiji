@@ -80,39 +80,38 @@ These are some of the tools used to build this application. They provided a stro
 <!-- GETTING STARTED -->
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
-
+You can install Aokiji by downloading the latest [release](https://github.com/diogogomesaraujo/aokiji/releases/latest) available for your operating system or, alternatively, build it from source by following these steps.
 
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
-* npm
-  ```sh
-  npm install npm@latest -g
-  ```
+In order to run build this application from source you will need to have `cargo`,  `cargo-binstall` and `dioxus-cli` installed. To install them you can follow this [tutorial](https://dioxuslabs.com/learn/0.6/getting_started/#) by Dioxus.
 
 ### Installation
 
-_Below is an example of how you can instruct your audience on installing and setting up your app. This template doesn't rely on any external dependencies or services._
+1. Clone the repo
 
-1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
    ```sh
-   git clone https://github.com/github_username/repo_name.git
+   git clone https://github.com/diogogomesaraujo/aokiji.git
    ```
-3. Install NPM packages
+   
+3. Go to the project's directory
+   
+5. Inside the project go to the following directory
+   
    ```sh
-   npm install
+   cd frontend/aokiji
    ```
-4. Enter your API in `config.js`
-   ```js
-   const API_KEY = 'ENTER YOUR API';
-   ```
-5. Change git remote url to avoid accidental pushes to base project
+   
+6. Compile the application to an executable
+
    ```sh
-   git remote set-url origin github_username/repo_name
-   git remote -v # confirm the changes
+   dx bundle
+   ```
+   
+8. Access the executable's folder and run install the application
+
+   ```sh
+   cd dist
    ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -122,59 +121,23 @@ _Below is an example of how you can instruct your audience on installing and set
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+### Select a Node and Get an API-KEY
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+To be able to fully utilize Aokiji you will need to choose a [node](https://publicnodes.somenano.com/) and get a valid API-KEY. After doing so, inside the account's dashboard, select the **Transaction** section, scroll down to the configuration and update it.
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- ROADMAP -->
-## Roadmap
-
-- [x] Add Changelog
-- [x] Add back to top links
-- [ ] Add Additional Templates w/ Examples
-- [ ] Add "components" document to easily copy & paste sections of the readme
-- [ ] Multi-language Support
-    - [ ] Chinese
-    - [ ] Spanish
-
-See the [open issues](https://github.com/othneildrew/Best-README-Template/issues) for a full list of proposed features (and known issues).
+<div align="center">
+    <img src="./assets/config.png" alt="Config" style="width: 50%;">
+</div>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+### Creating Accounts
 
 
 <!-- CONTRIBUTING -->
 ## Contributing
 
-Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
-Don't forget to give the project a star! Thanks again!
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### Top contributors:
-
-<a href="https://github.com/othneildrew/Best-README-Template/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=othneildrew/Best-README-Template" alt="contrib.rocks image" />
-</a>
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- LICENSE -->
-## License
-
-Distributed under the Unlicense License. See `LICENSE.txt` for more information.
+This application is fully **open-source** so feel free to contribute to this implementation or fork it and adapt it to your liking.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
