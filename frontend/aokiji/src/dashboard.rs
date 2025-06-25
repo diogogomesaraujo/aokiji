@@ -1,3 +1,5 @@
+//! This file contains the different building blocks that form the dashboard of the Nano shared acconut.
+
 use crate::{AppState, TransactionState, MAIN_CSS, PORT};
 use arboard::Clipboard;
 use dioxus::prelude::*;
@@ -211,6 +213,7 @@ fn Header() -> Element {
                         }
                     }
                     div { id:"secondary", a { {
+                        // FROST parameters stored in the app state
                         let frost_state = app_state.read().frost_state.clone();
                         format!("{} Participants", frost_state.participants)
                     } } }
@@ -245,6 +248,8 @@ fn StartTransaction() -> Element {
             let state = RPCState::new(&url);
             let account = app_state.read().nano_account.clone();
             let path = app_state.read().account_path.clone();
+
+            // building the unsigned block according to the type of transaction
             let unsigned_block = match transaction_type.read().as_str() {
                 "OPEN" => match UnsignedBlock::create_open(&state, &account).await {
                     Ok(block) => block,
@@ -281,6 +286,8 @@ fn StartTransaction() -> Element {
                     }
                 },
             };
+
+            // getting the sign input from the path stored in the app state
             let mut sign_input = match SignInput::from_file(&path).await {
                 Ok(input) => input,
                 Err(e) => {
@@ -302,11 +309,19 @@ fn StartTransaction() -> Element {
                 }
             };
 
+            // notify the user of the state of the transaction
             transaction_state.set(TransactionState::Processing);
 
+            // get the frost state from the shared app state
             let state = app_state.read().frost_state.clone();
+
+            // get the path of the sign input file from the shared app state
             let path = app_state.read().account_path.clone();
+
+            // get the path of the config file from the shared app state
             let config_file_path = app_state.read().config_file_path.clone();
+
+            // open the socket with the correct parameters
             let server = tokio::spawn(async move {
                 match frost_sig::server::sign_server::run(
                     "localhost",
@@ -324,6 +339,7 @@ fn StartTransaction() -> Element {
                 };
             });
 
+            // connect to the socket that was opened
             let client = tokio::spawn(async move {
                 tokio::time::sleep(Duration::from_secs(2)).await;
                 match frost_sig::client::sign_client::run(
@@ -342,12 +358,11 @@ fn StartTransaction() -> Element {
                 };
             });
 
+            // after processing the transaction notify user
             tokio::spawn(async move {
                 let _ = tokio::join!(server, client);
                 transaction_state.set(TransactionState::Successful);
             });
-
-            println!("Server and Clients listening.");
         });
     };
 

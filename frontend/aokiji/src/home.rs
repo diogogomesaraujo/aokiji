@@ -1,3 +1,5 @@
+//! This file contains the different building blocks that form the home page of the application.
+
 use crate::{AppState, Route, TransactionState, MAIN_CSS, PORT};
 use dioxus::prelude::*;
 use dioxus_material_icons::MaterialIconStylesheet;
