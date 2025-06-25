@@ -34,12 +34,16 @@
         <li><a href="#installation">Installation</a></li>
       </ul>
     </li>
-    <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
+    <li>
+      <a href="#usage">Usage</a>
+      <ul>
+        <li><a href="#selecting-a-node-and-getting-an-api-key">Selecting a Node and Getting an API-KEY</a></li>
+        <li><a href="#creating-accounts">Creating Accounts</a></li>
+        <li><a href="#opening-accounts">Opening Accounts</a></li>
+        <li><a href="#transactions">Transactions</a></li>
+      </ul>
+    </li>
     <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
-    <li><a href="#contact">Contact</a></li>
-    <li><a href="#acknowledgments">Acknowledgments</a></li>
   </ol>
 </details>
 
@@ -121,12 +125,12 @@ In order to run build this application from source you will need to have `cargo`
 <!-- USAGE EXAMPLES -->
 ## Usage
 
-### Select a Node and Get an API-KEY
+### Selecting a Node and Getting an API-KEY
 
 To be able to fully utilize Aokiji you will need to choose a [node](https://publicnodes.somenano.com/) and get a valid API-KEY. After doing so, inside the account's dashboard, select the **Transaction** section, scroll down to the configuration and update it.
 
 <div align="center">
-    <img src="./assets/config.png" alt="Config" style="width: 50%;">
+    <img src="./assets/config.png" alt="Config" style="width: 30%;">
 </div>
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -136,42 +140,39 @@ To be able to fully utilize Aokiji you will need to choose a [node](https://publ
 To create an account, the group must select a main participant that should open the connection (by selecting the **OPEN** type) while others must connect to the main participant's IP (by selecting the **JOIN** type). Participants must agree to a number of participants and threshold or else the protocol will abort.
 
 <div align="center">
-    <img src="./assets/create-account.png" alt="Create Account" style="width: 50%;">
+    <img src="./assets/create-account.png" alt="Create Account" style="width: 30%;">
 </div>
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+### Opening Accounts
+
+To process transactions collectively, the group must also select a main participant that should open the connection while others connect to their IP address. Participants must also agree to the amount (when sending Nano) or the operation will abort.
+
+
+
+<div align="center">
+    <img src="./assets/open-account.png" alt="Open Account" style="width: 30%;">
+</div>
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+### Transactions
+
+To process transactions collectively, the group must also select a main participant that should open the connection while others connect to their IP address. Participants must also agree to the amount (when sending Nano) or the operation will abort.
+
+
+
+<div align="center">
+    <img src="./assets/transactions.png" alt="Transactions" style="width: 30%;">
+</div>
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- CONTRIBUTING -->
 ## Contributing
 
-This application is fully **open-source** so feel free to contribute to this implementation or fork it and adapt it to your liking.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- CONTACT -->
-## Contact
-
-Your Name - [@your_twitter](https://twitter.com/your_username) - email@example.com
-
-Project Link: [https://github.com/your_username/repo_name](https://github.com/your_username/repo_name)
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
-<!-- ACKNOWLEDGMENTS -->
-## Acknowledgments
-
-Use this space to list resources you find helpful and would like to give credit to. I've included a few of my favorites to kick things off!
-
-* [Choose an Open Source License](https://choosealicense.com)
-* [GitHub Emoji Cheat Sheet](https://www.webpagefx.com/tools/emoji-cheat-sheet)
-* [Malven's Flexbox Cheatsheet](https://flexbox.malven.co/)
-* [Malven's Grid Cheatsheet](https://grid.malven.co/)
-* [Img Shields](https://shields.io)
-* [GitHub Pages](https://pages.github.com)
-* [Font Awesome](https://fontawesome.com)
-* [React Icons](https://react-icons.github.io/react-icons/search)
+This application is fully **open-source** so feel free to contribute to it or fork and adapt it to your liking.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
