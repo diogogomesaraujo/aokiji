@@ -49,8 +49,7 @@
 ## About The Project
 
 <div align="center">
-    <img src="./assets/demo1.png" alt="Demo 1" max-height="600">
-    <img src="./assets/demo2.png" alt="Demo 2" max-height="600">
+    <img src="./assets/demo.png" alt="Demo">
 </div>
 
 Aokiji is a desktop wallet that allows users to create shared accounts and execute group transactions in Nano's blockchain. It was developed as the Final Project of my Computer Science degree in Universidade da Beira Interior.
