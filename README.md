@@ -133,6 +133,11 @@ To be able to fully utilize Aokiji you will need to choose a [node](https://publ
 
 ### Creating Accounts
 
+To create an account, the group must select a main participant that should open the connection (by selecting the **OPEN** type) while others must connect to the main participant's IP (by selecting the **JOIN** type). Participants must agree to a number of participants and threshold or else the protocol will abort.
+
+<div align="center">
+    <img src="./assets/create-account.png" alt="Create Account" style="width: 50%;">
+</div>
 
 <!-- CONTRIBUTING -->
 ## Contributing
