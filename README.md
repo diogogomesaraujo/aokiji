@@ -53,26 +53,26 @@
     <img src="./assets/demo2.png" alt="Demo 2" height="600">
 </div>
 
-Aokiji is a wallet that allows users to create shared accounts and execute group transactions in Nano's blockchain. It was developed as the Final Project of my Computer Science degree in Universidade da Beira Interior.
+Aokiji is a desktop wallet that allows users to create shared accounts and execute group transactions in Nano's blockchain. It was developed as the Final Project of my Computer Science degree in Universidade da Beira Interior.
 
 **Why should you use Aokiji?:**
 * It is a **client-side only** application where a group can sign transactions **without accessing a centralized server**. Additionally, users are able to **select the Node** where the transactions will be processed.
 * It is built with modern technologies and protocols like **Rust**, **Dalek** and **FROST**, making it fast and secure.
 * Finally, it is **simple**, **lightweight** and **easy-to-use** unlike other options on the market.
 
-If you want to dive deeper into the development check out [frost-sig](https://github.com/diogogomesaraujo/frost-sig), where the lower-level key generation, signing and veryfying operations are implemented.
+If you want to dive deeper into the development check out [frost-sig](https://github.com/diogogomesaraujo/frost-sig), where the lower-level operations like key generation, signing and veryfying are implemented.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-
 ### Built With
 
+These are some of the tools used to build this application. They provided a strong foundation to assure its integrity and robustness.
 
 * `Rust`: the programming language used for this project.
 * `Dioxus`: for building the desktop application.
 * `Dalek`: for implementing FROST and validating. 
-* `Tokio`: for group communications.
+* `Tokio`: to communicate within the group.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
