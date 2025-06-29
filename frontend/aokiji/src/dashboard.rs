@@ -469,7 +469,7 @@ fn JoinTransaction() -> Element {
 
     let app_state = use_context::<Signal<AppState>>();
 
-    let open_socket_and_connect = move |_| {
+    let connect_to_socket = move |_| {
         use_future(move || async move {
             let url = app_state.read().config_file.url.clone();
             let state = RPCState::new(&url);
@@ -557,8 +557,16 @@ fn JoinTransaction() -> Element {
             });
 
             tokio::spawn(async move {
-                let _ = tokio::join!(client);
-                transaction_state.set(TransactionState::Successful);
+                match client.await {
+                    Ok(_) => {
+                        if !matches!(*transaction_state.read(), TransactionState::Error(_)) {
+                            transaction_state.set(TransactionState::Successful);
+                        }
+                    }
+                    Err(e) => {
+                        transaction_state.set(TransactionState::Error(format!("{e}")));
+                    }
+                }
             });
 
             println!("Client listening.");
@@ -660,7 +668,7 @@ fn JoinTransaction() -> Element {
                         },
                         _ => true,
                     },
-                    onclick: open_socket_and_connect,
+                    onclick: connect_to_socket,
                     "Join",
                 }
             }

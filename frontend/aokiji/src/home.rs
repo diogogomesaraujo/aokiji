@@ -97,8 +97,19 @@ fn CreateAccountSession() -> Element {
         });
 
         tokio::spawn(async move {
-            let _ = tokio::join!(server, client);
-            is_completed.set(true);
+            match (client.await, server.await) {
+                (Ok(_), Ok(_)) => {
+                    if !matches!(*transaction_state.read(), TransactionState::Error(_)) {
+                        transaction_state.set(TransactionState::Successful);
+                        is_completed.set(true);
+                    }
+                }
+                (_, _) => {
+                    transaction_state.set(TransactionState::Error(format!(
+                        "Error while creating the account."
+                    )));
+                }
+            }
         });
 
         println!("Server and Clients listening.");
@@ -112,17 +123,25 @@ fn CreateAccountSession() -> Element {
             match frost_sig::client::keygen_client::run(&ip_address, PORT, &path).await {
                 Ok(_) => {}
                 Err(_) => {
-                    transaction_state.set(TransactionState::Error(
-                        "Failed to process the transaction".to_string(),
-                    ));
+                    transaction_state.set(TransactionState::Error(format!(
+                        "Error while creating the account."
+                    )));
                 }
             };
         });
 
         tokio::spawn(async move {
-            let _ = tokio::join!(client);
-            is_completed.set(true);
-            transaction_state.set(TransactionState::Successful);
+            match client.await {
+                Ok(_) => {
+                    if !matches!(*transaction_state.read(), TransactionState::Error(_)) {
+                        transaction_state.set(TransactionState::Successful);
+                        is_completed.set(true);
+                    }
+                }
+                Err(e) => {
+                    transaction_state.set(TransactionState::Error(format!("{e}")));
+                }
+            }
         });
     };
 
