@@ -56,7 +56,7 @@
     <img src="./assets/demo.png" alt="Demo">
 </div>
 
-Aokiji is a desktop wallet that allows users to create shared accounts and execute group transactions in Nano's blockchain. It was developed as the Final Project of my Computer Science degree in Universidade da Beira Interior. Check out the [report](./report.pdf)
+Aokiji is a desktop wallet that allows users to create shared accounts and execute group transactions in Nano's blockchain. It was developed as the Final Project of my Computer Science degree in Universidade da Beira Interior. Check out the [report](./report.pdf).
 
 **Why should you use Aokiji?:**
 * It is a **client-side only** application where a group can sign transactions **without accessing a centralized server**. Additionally, users are able to **select the Node** where the transactions will be processed.
