@@ -56,7 +56,7 @@
     <img src="./assets/demo.png" alt="Demo">
 </div>
 
-Aokiji is a desktop wallet that allows users to create shared accounts and execute group transactions in Nano's blockchain. It was developed as the Final Project of my Computer Science degree in Universidade da Beira Interior.
+Aokiji is a desktop wallet that allows users to create shared accounts and execute group transactions in Nano's blockchain. It was developed as the Final Project of my Computer Science degree in Universidade da Beira Interior. Check out the [report](./report.pdf)
 
 **Why should you use Aokiji?:**
 * It is a **client-side only** application where a group can sign transactions **without accessing a centralized server**. Additionally, users are able to **select the Node** where the transactions will be processed.
@@ -74,7 +74,7 @@ These are some of the tools used to build this application. They provided a stro
 
 * `Rust`: the programming language used for this project.
 * `Dioxus`: for building the desktop application.
-* `Dalek`: for implementing FROST and validating. 
+* `Dalek`: for implementing FROST and validating.
 * `Tokio`: to communicate within the group.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -97,21 +97,21 @@ In order to run build this application from source you will need to have `cargo`
    ```sh
    git clone https://github.com/diogogomesaraujo/aokiji.git
    ```
-   
+
 3. Go to the project's directory
-   
+
 5. Inside the project go to the following directory
-   
+
    ```sh
    cd frontend/aokiji
    ```
-   
+
 6. Compile the application to an executable
 
    ```sh
    dx bundle
    ```
-   
+
 8. Access the executable's folder and run install the application
 
    ```sh
