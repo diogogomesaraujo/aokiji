@@ -86,7 +86,7 @@ fn Balance() -> Element {
         let account = account.clone();
         let config = app_state.read().config_file.clone();
         let state = RPCState::new(&config.url);
-        async move { AccountBalance::get_from_rpc(&state, &account).await }
+        async move { AccountBalance::get_from_rpc(&state, &account, &config.key).await }
     });
     let balance_info: AccountBalance = match &*balance_future.read_unchecked() {
         Some(res) => match res {
@@ -248,10 +248,11 @@ fn StartTransaction() -> Element {
             let state = RPCState::new(&url);
             let account = app_state.read().nano_account.clone();
             let path = app_state.read().account_path.clone();
+            let config = app_state.read().config_file.clone();
 
             // building the unsigned block according to the type of transaction
             let unsigned_block = match transaction_type.read().as_str() {
-                "OPEN" => match UnsignedBlock::create_open(&state, &account).await {
+                "OPEN" => match UnsignedBlock::create_open(&state, &account, &config.key).await {
                     Ok(block) => block,
                     Err(_) => {
                         transaction_state.set(TransactionState::Error(
@@ -260,20 +261,23 @@ fn StartTransaction() -> Element {
                         return;
                     }
                 },
-                "RECEIVE" => match UnsignedBlock::create_receive(&state, &account).await {
-                    Ok(block) => block,
-                    Err(_) => {
-                        transaction_state.set(TransactionState::Error(
-                            "Couldn't create the block.".to_string(),
-                        ));
-                        return;
+                "RECEIVE" => {
+                    match UnsignedBlock::create_receive(&state, &account, &config.key).await {
+                        Ok(block) => block,
+                        Err(_) => {
+                            transaction_state.set(TransactionState::Error(
+                                "Couldn't create the block.".to_string(),
+                            ));
+                            return;
+                        }
                     }
-                },
+                }
                 _ => match UnsignedBlock::create_send(
                     &state,
                     &account,
                     &receivers_account.read(),
                     &amount.read().parse::<f64>().unwrap_or(0.),
+                    &config.key,
                 )
                 .await
                 {
@@ -475,8 +479,9 @@ fn JoinTransaction() -> Element {
             let state = RPCState::new(&url);
             let account = app_state.read().nano_account.clone();
             let path = app_state.read().account_path.clone();
+            let config = app_state.read().config_file.clone();
             let unsigned_block = match transaction_type.read().as_str() {
-                "OPEN" => match UnsignedBlock::create_open(&state, &account).await {
+                "OPEN" => match UnsignedBlock::create_open(&state, &account, &config.key).await {
                     Ok(block) => block,
                     Err(_) => {
                         transaction_state.set(TransactionState::Error(
@@ -485,20 +490,23 @@ fn JoinTransaction() -> Element {
                         return;
                     }
                 },
-                "RECEIVE" => match UnsignedBlock::create_receive(&state, &account).await {
-                    Ok(block) => block,
-                    Err(_) => {
-                        transaction_state.set(TransactionState::Error(
-                            "Couldn't create the block.".to_string(),
-                        ));
-                        return;
+                "RECEIVE" => {
+                    match UnsignedBlock::create_receive(&state, &account, &config.key).await {
+                        Ok(block) => block,
+                        Err(_) => {
+                            transaction_state.set(TransactionState::Error(
+                                "Couldn't create the block.".to_string(),
+                            ));
+                            return;
+                        }
                     }
-                },
+                }
                 _ => match UnsignedBlock::create_send(
                     &state,
                     &account,
                     &receivers_account.read(),
                     &amount.read().parse::<f64>().unwrap_or(0.),
+                    &config.key,
                 )
                 .await
                 {
@@ -724,7 +732,7 @@ fn Transactions() -> Element {
         let state = RPCState::new(&config.url);
         let nano_account = app_state.read().nano_account.clone();
 
-        match AccountHistory::get_from_rpc(&state, &nano_account, 50u32).await {
+        match AccountHistory::get_from_rpc(&state, &nano_account, 50u32, &config.key).await {
             Ok(account_history) => account_history.history,
             Err(_) => Vec::new(),
         }
@@ -819,7 +827,7 @@ fn AccountInfoSection() -> Element {
         async move {
             let config = app_state.read().config_file.clone();
             let state = RPCState::new(&config.url);
-            AccountInfo::get_from_rpc(&state, &account).await
+            AccountInfo::get_from_rpc(&state, &account, &config.key).await
         }
     });
 
