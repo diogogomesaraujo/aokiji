@@ -106,13 +106,17 @@ In order to run build this application from source you will need to have `cargo`
    cd frontend/aokiji
    ```
 
-6. Compile the application to an executable
+6. Compile the application to an executable or simply run it
 
    ```sh
+   # Run the application
+   dx serve
+   
+   # Bundle the application
    dx bundle
    ```
 
-8. Access the executable's folder and run install the application
+8. Access the executable's folder and install the application
 
    ```sh
    cd dist
